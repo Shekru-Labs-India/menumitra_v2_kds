@@ -1,100 +1,65 @@
 import axios from "axios";
 import { API_URL } from "../config";
 
+const BASE_URL = "https://men4u.xyz/v2/common";
+
 export const authService = {
   // Send OTP
   sendOTP: async (mobileNumber) => {
     try {
-      const response = await fetch("https://men4u.xyz/v2/common/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: mobileNumber, role: "chef" }),
+      const response = await axios.post(`${BASE_URL}/login`, {
+        mobile: mobileNumber,
+        role: "chef"
       });
-      const result = await response.json();
-      if (result.st === 1) {
-        return { success: true, message: result.msg, role: result.role };
-      } else {
-        // Check for maximum sessions error
-        if (
-          result.msg &&
-          result.msg.toLowerCase().includes("maximum active sessions")
-        ) {
-          return {
-            success: false,
-            error:
-              "Maximum active sessions reached. Please logout from other devices.",
-            isMaxSessionsError: true,
-          };
-        }
-        return { success: false, error: result.msg || "Failed to send OTP" };
-      }
+
+      // API returns: {"detail": "Your OTP is sent successfully.", "role": "chef"}
+      return response.data;
     } catch (error) {
-      console.error("OTP Send Error:", error);
-      return { success: false, error: "Failed to send OTP" };
+      console.error("OTP Send Error:", error.response?.data || error.message);
+      throw error.response?.data || { detail: "Failed to send OTP" };
     }
   },
 
   // Verify OTP
   verifyOTP: async (mobile, otp, fcmToken) => {
     const generateRandomSessionId = (length) => {
-      const chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      let sessionId = "";
-      for (let i = 0; i < length; i++) {
-        sessionId += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return sessionId;
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      return Array.from({ length }, () => 
+        chars.charAt(Math.floor(Math.random() * chars.length))
+      ).join('');
     };
 
-    // Generate a 20-character session ID
     const deviceSessId = generateRandomSessionId(20);
 
     try {
-      const response = await fetch(
-        "https://men4u.xyz/v2/common/verify_otp",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mobile: mobile,
-            otp,
-            fcm_token: fcmToken,
-            device_id: deviceSessId,
-            device_model: "web",
-          }),
-        }
-      );
-      const result = await response.json();
+      const response = await axios.post(`${BASE_URL}/verify_otp`, {
+        mobile,
+        otp,
+        fcm_token: fcmToken,
+        device_id: deviceSessId,
+        device_model: "web"
+      });
 
-      if (result.st === 1) {
-        // Store all necessary session data
-        localStorage.setItem("user_id", result.user_id);
-        localStorage.setItem("outlet_id", result.outlet_id);
-        localStorage.setItem("outlet_name", result.outlet_name);
-        localStorage.setItem("image", result.image);
-        localStorage.setItem("fcmToken", fcmToken);
-        localStorage.setItem("access", result.access);
-        localStorage.setItem("device_id", deviceSessId);
-        localStorage.setItem("last_activity", new Date().getTime().toString());
-        localStorage.setItem("device_token", result.device_token);
+      // API returns user data with access token
+      const userData = {
+        ...response.data,
+        device_id: deviceSessId,
+        fcm_token: fcmToken,
+        last_activity: new Date().getTime()
+      };
 
-        // Store the complete auth data for easy access
-        const authData = {
-          user_id: result.user_id,
-          outlet_id: result.outlet_id,
-          outlet_name: result.outlet_name,
-          image: result.image,
-          access: result.access,
-          device_id: deviceSessId,
-          last_activity: new Date().getTime(),
-        };
-        localStorage.setItem("authData", JSON.stringify(authData));
-      }
+      // Store auth data in localStorage
+      Object.entries(userData).forEach(([key, value]) => {
+        localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value.toString());
+      });
 
-      return result;
+      // Store complete data for easy access
+      localStorage.setItem("authData", JSON.stringify(userData));
+
+      return userData;
     } catch (error) {
-      console.error("OTP Verification Error:", error);
-      return { st: 0, msg: "Failed to verify OTP" };
+      console.error("OTP Verification Error:", error.response?.data || error.message);
+      throw error.response?.data || { detail: "Failed to verify OTP" };
     }
   },
 };

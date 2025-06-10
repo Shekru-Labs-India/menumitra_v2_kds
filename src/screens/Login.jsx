@@ -25,13 +25,14 @@ function Login() {
       setLoading(true);
       const response = await authService.sendOTP(mobileNumber);
       
-      if (response.st === 1) {
+      // Check for successful OTP send
+      if (response.detail && response.detail.includes("successfully")) {
         setShowOtpInput(true);
       } else {
-        setError(response.msg || "Failed to send OTP");
+        setError(response.detail || "Failed to send OTP");
       }
     } catch (error) {
-      setError("Something went wrong. Please try again.");
+      setError(error.detail || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -70,29 +71,20 @@ function Login() {
 
     try {
       setLoading(true);
-      const response = await authService.verifyOTP(mobileNumber, otp);
+      // Get FCM token (you might want to implement this)
+      const fcmToken = "dummy_fcm_token"; // Replace with actual FCM token generation
       
-      if (response.st === 1) {
-        // Store required data in localStorage
-        const authData = {
-          access_token: response.access_token,
-          refresh_token: response.refresh,
-          device_token: response.device_token,
-          outlet_id: response.outlet_id,
-          user_id: response.user_id,
-          outlet_name: response.outlet_name,
-          settings: response.settings
-        };
-
-        localStorage.setItem('authData', JSON.stringify(authData));
-        
-        // Navigate to orders page
+      const userData = await authService.verifyOTP(mobileNumber, otp, fcmToken);
+      
+      // Check if we got the access token
+      if (userData.access_token) {
+        // No need to manually store data as authService already handles it
         navigate("/orders");
       } else {
-        setError(response.msg || "Invalid OTP");
+        setError("Invalid OTP verification response");
       }
     } catch (error) {
-      setError("Something went wrong. Please try again.");
+      setError(error.detail || "Failed to verify OTP");
     } finally {
       setLoading(false);
     }
@@ -120,7 +112,7 @@ function Login() {
             </Link>
           </div>
           <span className="app-brand-text demo text-heading fw-semibold text-center pt-5">
-            Customer Display System
+            Kitchen Display System
           </span>
           {/* /Logo */}
           <div className="card-body pt-4">
