@@ -1,0 +1,77 @@
+/* Add to your CSS file */
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Remove spinner from number input */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}/* General Styles */
+.login-screen-container {
+  background-color: #f4f6f9;
+}
+
+.card {
+  border-radius: 15px;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+  width: 380px;              /* Fixed width */
+  min-height: 440px;         /* Optional: fixed min height for consistency */
+  transition: box-shadow 0.2s;
+}
+
+.logo {
+  width: 50px;
+  height: 50px;
+}
+
+input[type="tel"] {
+  border-radius: 8px;
+}
+
+.otp-input {
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  border-radius: 10px;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .otp-input {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+}
+
+.input-error {
+  border: 1.5px solid #e74c3c !important;
+  background: #fff6f6;
+}
+
+.error-message {
+  min-height: 20px;
+  color: #e74c3c;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  line-height: 1.2;
+  padding-left: 2px;
+}
