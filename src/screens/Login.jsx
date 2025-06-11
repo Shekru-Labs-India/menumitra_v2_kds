@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { authService } from "../services/authService";
+import axios from "axios";
 
 function Login() {
   const [mobileNumber, setMobileNumber] = useState("");
@@ -23,19 +23,29 @@ function Login() {
 
     try {
       setLoading(true);
-      const response = await authService.sendOTP(mobileNumber);
+      const response = await axios.post("https://men4u.xyz/v2/common/login", {
+        mobile: mobileNumber,
+        role: "chef"
+      });
       
       // Check for successful OTP send
-      if (response.detail && response.detail.includes("successfully")) {
+      if (response.data.detail && response.data.detail.includes("successfully")) {
         setShowOtpInput(true);
       } else {
-        setError(response.detail || "Failed to send OTP");
+        setError(response.data.detail || "Failed to send OTP");
       }
     } catch (error) {
-      setError(error.detail || "Something went wrong. Please try again.");
+      setError(error.response?.data?.detail || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateRandomSessionId = (length) => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from({ length }, () => 
+      chars.charAt(Math.floor(Math.random() * chars.length))
+    ).join('');
   };
 
   const handleOtpChange = (index, value) => {
@@ -71,20 +81,40 @@ function Login() {
 
     try {
       setLoading(true);
-      // Get FCM token (you might want to implement this)
-      const fcmToken = "dummy_fcm_token"; // Replace with actual FCM token generation
+      const deviceSessId = generateRandomSessionId(20);
+      const fcmToken = "dummy_fcm_token";
       
-      const userData = await authService.verifyOTP(mobileNumber, otp, fcmToken);
+      const response = await axios.post("https://men4u.xyz/v2/common/verify_otp", {
+        mobile: mobileNumber,
+        otp: otp,
+        fcm_token: fcmToken,
+        device_id: deviceSessId,
+        device_model: "web"
+      });
       
-      // Check if we got the access token
-      if (userData.access_token) {
-        // No need to manually store data as authService already handles it
+      if (response.data && response.data.access_token) {
+        const userData = {
+          ...response.data,
+          device_id: deviceSessId,
+          fcm_token: fcmToken,
+          last_activity: new Date().getTime()
+        };
+
+        // Store all user data in localStorage
+        Object.entries(userData).forEach(([key, value]) => {
+          localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value.toString());
+        });
+
+        // Make sure outlet_id is also stored
+        localStorage.setItem("outlet_id", response.data.outlet_id);
+
+        // Navigate to orders page on success
         navigate("/orders");
       } else {
-        setError("Invalid OTP verification response");
+        setError("Invalid response from server");
       }
     } catch (error) {
-      setError(error.detail || "Failed to verify OTP");
+      setError(error.response?.data?.detail || "Failed to verify OTP");
     } finally {
       setLoading(false);
     }

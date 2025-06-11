@@ -45,59 +45,72 @@ function OrdersList() {
   const [placedOrders, setPlacedOrders] = useState([]);
   const [cookingOrders, setCookingOrders] = useState([]);
   const [paidOrders, setPaidOrders] = useState([]);
+  const [servedOrders, setServedOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previousMenuItems, setPreviousMenuItems] = useState({});
+  
+  // Get data from localStorage that we stored during login
   const outletId = localStorage.getItem("outlet_id");
   const userId = localStorage.getItem("user_id");
-  
+  const accessToken = localStorage.getItem("access_token");
+  const deviceId = localStorage.getItem("device_id");
+  const fcmToken = localStorage.getItem("fcm_token");
+
   useEffect(() => {
-    if (!outletId) {
+    // Add debug logging
+    console.log("Auth Data Check:", {
+      accessToken,
+      userId,
+      outletId,
+      deviceId
+    });
+
+    if (!accessToken || !outletId || !userId || !deviceId) {
+      console.log("Missing required auth data, redirecting to login");
       navigate("/login");
       return;
     }
     fetchOrders();
 
-    // Set up polling interval
     const intervalId = setInterval(fetchOrders, 10000);
-
-    // Cleanup interval on component unmount
     return () => clearInterval(intervalId);
   }, [navigate]);
 
   const fetchOrders = async () => {
-    const accessToken = localStorage.getItem("access"); // Retrieve the access token
-    const device_token = localStorage.getItem("device_token");
-
     if (!accessToken) {
       console.error("No access token found");
-      window.location.href = "/login"; // Redirect to login page if no token
+      navigate("/login");
       return;
     }
   
     try {
       const response = await fetch(
-        "https://men4u.xyz/common_api/cds_kds_order_listview",
+        "https://men4u.xyz/v2/common/cds_kds_order_listview",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`, // Include the access token in the header
+            "Authorization": `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ outlet_id: outletId , device_token: device_token}),
+          body: JSON.stringify({ 
+            outlet_id: outletId,
+            device_token: deviceId
+          }),
         }
       );
   
       if (response.status === 401) {
         console.error("Unauthorized access - redirecting to login");
-        window.location.href = "/login"; // Redirect to login if 401
+        navigate("/login");
         return;
       }
   
       const result = await response.json();
+      console.log("API Response:", result);
   
-      if (result.st === 1) {
-        // Compare new orders with existing ones and store current menu items
+      if (result) {
+        // Store current menu items for comparison
         result.cooking_orders?.forEach(newOrder => {
           const existingOrder = cookingOrders.find(order => order.order_id === newOrder.order_id);
           if (existingOrder) {
@@ -109,11 +122,14 @@ function OrdersList() {
           }
         });
   
+        // Update state with new orders
         setPlacedOrders(result.placed_orders || []);
         setCookingOrders(result.cooking_orders || []);
-        setPaidOrders(result.served_orders || []);
+        setPaidOrders(result.paid_orders || []);
+        setServedOrders(result.served_orders || []);
+        setError(null);
       } else {
-        setError(result.msg || "Failed to fetch orders");
+        setError("Failed to fetch orders");
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -124,19 +140,15 @@ function OrdersList() {
   };
   
   const updateOrderStatus = async (orderId) => {
-    const accessToken = localStorage.getItem("access");
-    // Use the same device token as fetchOrders function
-    const device_token = localStorage.getItem("device_token");
-  
     if (!accessToken) {
       console.error("No access token found");
-      alert("Please login to continue");
+      navigate("/login");
       return;
     }
   
     try {
       const response = await fetch(
-        "https://men4u.xyz/common_api/update_order_status",
+        "https://men4u.xyz/v2/common/update_order_status",
         {
           method: "POST",
           headers: {
@@ -148,19 +160,19 @@ function OrdersList() {
             order_id: orderId,
             order_status: "served",
             user_id: userId,
-            device_token: device_token
+            device_token: deviceId
           }),
         }
       );
   
-      // Check if response is ok before parsing
       if (!response.ok) {
         if (response.status === 401) {
-          // Try refreshing token or handle expired session
           const refreshResult = await refreshToken();
           if (refreshResult) {
-            // Retry the update with new token
             return updateOrderStatus(orderId);
+          } else {
+            navigate("/login");
+            return;
           }
         }
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -169,14 +181,12 @@ function OrdersList() {
       const result = await response.json();
       
       if (result.st === 1) {
-        fetchOrders(); // Refresh orders after successful update
+        fetchOrders();
         alert("Order successfully updated to served");
       } else if (result.st === 5) {
-        // Try to refresh orders to get new device token
-        console.error("Device token error:", result.msg);
-        await fetchOrders(); // Get fresh device token
+        await fetchOrders();
         alert("Retrying with updated device token...");
-        return updateOrderStatus(orderId); // Retry the update
+        return updateOrderStatus(orderId);
       } else {
         alert(result.msg || "Failed to update order status");
       }
@@ -185,11 +195,11 @@ function OrdersList() {
       alert("Error updating order status. Please try again.");
     }
   };
-  
-  // Add this helper function to refresh the token
+
+  // Update the refreshToken function to use the stored refresh token
   const refreshToken = async () => {
-    const refresh = localStorage.getItem("refresh");
-    if (!refresh) return false;
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) return false;
   
     try {
       const response = await fetch("https://men4u.xyz/common_api/token/refresh", {
@@ -198,13 +208,13 @@ function OrdersList() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          refresh: refresh,
+          refresh: refreshToken,
         }),
       });
   
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("access", data.access);
+        localStorage.setItem("access_token", data.access);
         return true;
       }
       return false;
@@ -214,8 +224,6 @@ function OrdersList() {
     }
   };
   
-  
-
   const getOrderTimeWithSeconds = (timeStr) => {
     if (!timeStr) return null;
     const now = new Date();
@@ -243,8 +251,6 @@ function OrdersList() {
 
     return orderDate;
   };
-
-
 
   const CircularCountdown = ({ orderId, order }) => {
     const [timeLeft, setTimeLeft] = useState(90);
@@ -327,16 +333,16 @@ function OrdersList() {
     const percentage = (timeLeft / 90) * 100;
   
     const handleRejectOrder = async () => {
-      const accessToken = localStorage.getItem("access");
+      const accessToken = localStorage.getItem("access_token");
       if (!accessToken) {
         console.error("No access token found");
-        window.location.href = "/login";
+        navigate("/login");
         return;
       }
   
       try {
         const response = await fetch(
-          "https://men4u.xyz/common_api/update_order_status",
+          "https://men4u.xyz/v2/common/update_order_status",
           {
             method: "POST",
             headers: {
@@ -344,22 +350,27 @@ function OrdersList() {
               "Authorization": `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
-              outlet_id: localStorage.getItem("outlet_id"),
+              outlet_id: outletId,
               order_id: orderId,
               order_status: "cancelled",
-              user_id: localStorage.getItem("user_id"),
-              device_token: localStorage.getItem("device_token"),
+              user_id: userId,
+              device_token: deviceId
             }),
           }
         );
-  
+
+        // Add response logging
+        console.log("Reject order response:", response.status);
+        
         if (response.status === 401) {
           console.error("Unauthorized access - redirecting to login");
-          window.location.href = "/login";
+          navigate("/login");
           return;
         }
-  
+
         const result = await response.json();
+        console.log("Reject order result:", result);
+        
         if (result.st === 1) {
           alert(result.msg);
           fetchOrders();
@@ -403,7 +414,6 @@ function OrdersList() {
     );
   };
   
-
   const renderOrders = (orders, type) => {
     if (!Array.isArray(orders)) return null;
 
@@ -491,27 +501,27 @@ function OrdersList() {
             {/* Placed Orders */}
             <div className="col-4">
               <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-secondary py-2 d-flex align-items-center justify-content-center rounded-4">
-                Placed
+                Placed ({placedOrders.length})
               </h4>
               <div className="row g-3">
                 {renderOrders(placedOrders, 'secondary')}
               </div>
             </div>
 
-            {/* Cooking Orders (previously Ongoing) */}
+            {/* Cooking Orders */}
             <div className="col-4">
               <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-warning py-2 d-flex align-items-center justify-content-center rounded-4">
-                Cooking
+                Cooking ({cookingOrders.length})
               </h4>
               <div className="row g-3">
                 {renderOrders(cookingOrders, 'warning')}
               </div>
             </div>
 
-            {/* Paid Orders (previously Completed) */}
+            {/* Paid Orders */}
             <div className="col-4">
               <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-success py-2 d-flex align-items-center justify-content-center rounded-4">
-                Served
+                Served ({paidOrders.length})
               </h4>
               <div className="row g-3">
                 {renderOrders(paidOrders, 'success')}
