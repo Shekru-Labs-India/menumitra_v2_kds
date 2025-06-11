@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@firebase/messaging": "^0.12.16",
-    "axios": "^0.21.1",
+    "axios": "^1.6.7",
     "buffer": "^6.0.3",
     "cra-template": "1.2.0",
     "crypto-browserify": "^3.12.1",
@@ -12,8 +12,8 @@
     "google-auth-library": "^9.15.0",
     "jsonwebtoken": "^9.0.2",
     "process": "^0.11.10",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-router-dom": "^6.28.0",
     "react-scripts": "5.0.1",
     "stream-browserify": "^3.0.0"
@@ -45,7 +45,7 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.0.0",
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "gh-pages": "^6.2.0"
   },
   "base": "/menumitra_kitchen_display_system"
