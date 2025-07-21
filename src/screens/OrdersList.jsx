@@ -49,6 +49,9 @@ function OrdersList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previousMenuItems, setPreviousMenuItems] = useState({});
+  const [outletName, setOutletName] = useState(
+    localStorage.getItem("outlet_name") || ""
+  );
 
   // Get data from localStorage that we stored during login
   const outletId = localStorage.getItem("outlet_id");
@@ -132,6 +135,21 @@ function OrdersList() {
         setPaidOrders(result.paid_orders || []);
         setServedOrders(result.served_orders || []);
         setError(null);
+
+        const allOrders = [
+          ...(result.placed_orders || []),
+          ...(result.cooking_orders || []),
+          ...(result.paid_orders || []),
+          ...(result.served_orders || []),
+        ];
+
+        if (allOrders.length > 0 && allOrders[0].outlet_name) {
+          const newOutletName = allOrders[0].outlet_name;
+          if (newOutletName !== outletName) {
+            setOutletName(newOutletName);
+            localStorage.setItem("outlet_name", newOutletName);
+          }
+        }
       } else {
         setError("Failed to fetch orders");
       }
@@ -531,7 +549,7 @@ function OrdersList() {
 
   return (
     <div className="min-vh-100 d-flex flex-column bg-light">
-      <Header />
+      <Header outletName={outletName} />
 
       <div className="flex-grow-1 p-3">
         {loading && <div className="text-center mt-5">Loading orders...</div>}

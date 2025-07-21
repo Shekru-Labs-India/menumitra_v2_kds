@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function Header() {
+function Header({ outletName }) {
   const [loading, setLoading] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
-  
+
   const image = localStorage.getItem("image");
-  const outletName = localStorage.getItem("outlet_name");
   const userId = localStorage.getItem("user_id");
-  
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,9 +16,10 @@ function Header() {
         user_id: userId,
         role: "chef",
         app: "chef",
-    device_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNyIsImV4cCI6MTc1MTIxNTc0NSwiaWF0IjoxNzUwNjEwOTQ1LCJqdGkiOiI3OWEwN2I5NS1lMGNlLTQ3MWMtYjFhMC1iYWIxNjIwOThjMzQiLCJyb2xlIjoiY2hlZiIsImRldmljZSI6IjhTRG9IUlU5OTFXQnNsUllDTUZofHdlYiJ9.aTe59qiGZUylv8AAYdWW-VUaDyc49Ey1puWtRjrO1CI",
+        device_token:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNyIsImV4cCI6MTc1MTIxNTc0NSwiaWF0IjoxNzUwNjEwOTQ1LCJqdGkiOiI3OWEwN2I5NS1lMGNlLTQ3MWMtYjFhMC1iYWIxNjIwOThjMzQiLCJyb2xlIjoiY2hlZiIsImRldmljZSI6IjhTRG9IUlU5OTFXQnNsUllDTUZofHdlYiJ9.aTe59qiGZUylv8AAYdWW-VUaDyc49Ey1puWtRjrO1CI",
       };
-    
+
       const response = await fetch("https://men4u.xyz/common_api/logout", {
         method: "POST",
         headers: {
@@ -27,9 +27,9 @@ function Header() {
         },
         body: JSON.stringify(logoutData),
       });
-    
+
       const data = await response.json();
-    
+
       if (data.st === 1) {
         localStorage.clear();
         navigate("/login");
@@ -55,7 +55,7 @@ function Header() {
                 alt="Hotel Logo"
                 className="me-2 rounded-circle"
                 style={{ width: "40px", height: "40px" }}
-                onError={() => setIsImageError(true)} 
+                onError={() => setIsImageError(true)}
               />
               <span className="fs-4 fw-bold">{outletName?.toUpperCase()}</span>
             </div>
@@ -73,14 +73,16 @@ function Header() {
               >
                 {outletName?.[0]?.toUpperCase() || "H"}
               </div>
-              <span className="fs-4 fw-bold">{outletName?.toUpperCase() || "HOTEL"}</span>
+              <span className="fs-4 fw-bold">
+                {outletName?.toUpperCase() || "HOTEL"}
+              </span>
             </div>
           )}
 
           {/* Logout Button - Always Visible */}
           <div className="d-flex align-items-center">
-            <Link 
-              to="/login" 
+            <Link
+              to="/login"
               className="btn btn-outline-danger"
               onClick={handleLogout}
             >
