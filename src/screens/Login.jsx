@@ -100,6 +100,7 @@ function Login() {
           fcm_token: fcmToken,
           device_id: deviceSessId,
           device_model: "web",
+          app_type: "pos",
         }
       );
 
@@ -184,11 +185,20 @@ function Login() {
                     name="mobile"
                     placeholder="Enter your mobile number"
                     value={mobileNumber}
-                    onChange={(e) =>
-                      setMobileNumber(
-                        e.target.value.replace(/\D/g, "").slice(0, 10)
-                      )
-                    }
+                    onChange={(e) => {
+                      const input = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
+                      if (/^[0-5]/.test(input)) {
+                        setError(
+                          "Mobile number cannot start with digits between 0 and 5."
+                        );
+                        return;
+                      } else {
+                        setError("");
+                      }
+                      setMobileNumber(input);
+                    }}
                     autoFocus
                   />
                   <label htmlFor="mobile">Mobile Number</label>
