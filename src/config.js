@@ -16,3 +16,11 @@ export const FIREBASE_CONFIG = {
 export const VAPID_KEY = "BGsWfw7acs_yXMa_bcWfw-49_MQkV8MdSOrCih9OO-v9pQ7AvKA2niL1dvguaHMfObKP8tO7Bq_4aTVEwOyA8x4";
 
 // Other configuration constants can be added here 
+
+// add at the bottom (or export from wherever you prefer)
+export const APP_INFO = {
+  name: "MenuMitra",
+  version: "2.0",
+  releaseDate: "13 Aug 2025",
+};
+

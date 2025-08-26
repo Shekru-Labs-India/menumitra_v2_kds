@@ -6,6 +6,8 @@ import React from "react";
 import "./App.css";
 import "./assets/toast/toast.js";
 import "./assets/toast/toast.css";
+import "remixicon/fonts/remixicon.css";
+
 
 function App() {
   return (

@@ -4,6 +4,8 @@ import './index.css';
 import App from './App';
 import './assets/css/demo.css'
 import './assets/css/core.css'
+import 'remixicon/fonts/remixicon.css';
+
 // import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

@@ -6,6 +6,7 @@ import { messaging } from "../firebase-config";
 import { getToken } from "firebase/messaging";
 import { VAPID_KEY } from "../config";
 import logo from "../assets/logo.png";
+import Footer from "../components/Footer";
 
 function LoginScreen() {
   const [mobileNumber, setMobileNumber] = useState("");
@@ -294,6 +295,9 @@ function LoginScreen() {
             </button>
           </form>
         )}
+       
+          <Footer />
+        
       </div>
     </div>
   );

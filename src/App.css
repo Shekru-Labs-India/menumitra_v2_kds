@@ -1,3 +1,4 @@
+/* App styles */
 .App {
   text-align: center;
 }
@@ -34,5 +35,73 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Footer brand logo */
+.kds-footer-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Social icon circles with borders */
+.kds-social {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444;
+  font-size: 20px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.kds-social i {
+  line-height: 1;
+}
+
+/* Hover effects with brand colors */
+.kds-social:hover .ri-facebook-fill { color: #1877F2; border-color: #1877F2; }
+.kds-social:hover .ri-instagram-fill { color: #E4405F; border-color: #E4405F; }
+.kds-social:hover .ri-youtube-fill { color: #FF0000; border-color: #FF0000; }
+.kds-social:hover .ri-google-fill { color: #4285F4; border-color: #4285F4; }
+
+.kds-social:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Version and date styling inside card */
+.kds-version {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 5px;
+}
+
+/* Adjust logo text to normal weight and color */
+.app-brand-text {
+  font-weight: normal; /* Removes bold (equivalent to fw-normal) */
+  color: #333; /* Default color, adjust if needed */
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .kds-socials {
+    gap: 12px;
+  }
+  .kds-social {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .kds-version {
+    font-size: 12px;
+  }
+  .card {
+    height: auto; /* Adjust height dynamically */
   }
 }

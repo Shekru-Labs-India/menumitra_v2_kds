@@ -16,7 +16,7 @@ function Footer() {
     target="_blank"
     rel="noopener noreferrer"
   >
-    <i className="bx bxl-facebook bx-sm" style={{ color: '#1877f2' }}></i> {/* Facebook Blue */}
+    <i className="ri-facebook-fill fs-4 bx-sm" style={{ color: '#1877f2' }}></i> {/* Facebook Blue */}
   </a>
   <a
     href="https://www.instagram.com/menumitra/"
@@ -24,7 +24,7 @@ function Footer() {
     target="_blank"
     rel="noopener noreferrer"
   >
-    <i className="bx bxl-instagram bx-sm" style={{ color: '#E4405F' }}></i> {/* Instagram Pink */}
+    <i className="" style={{ color: '#E4405F' }}></i> {/* Instagram Pink */}
   </a>
   <a
     href="https://www.youtube.com/@menumitra"
@@ -55,6 +55,7 @@ function Footer() {
               >
                 Shekru Labs India Pvt. Ltd.
               </a>
+              
             </div>
           </div>
         </div>

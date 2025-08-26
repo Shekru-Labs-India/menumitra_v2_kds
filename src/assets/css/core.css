@@ -43382,3 +43382,70 @@ a.bg-vimeo:focus {
 .footer.bg-lighter hr {
     border-color: rgba(67, 60, 80, .0775266667)
 }
+
+/* Footer Socials */
+.kds-social {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: transform 0.2s ease;
+  text-decoration: none; /* remove purple link color */
+}
+
+.kds-social i {
+  font-size: 20px;
+}
+
+/* Always show brand colors */
+.kds-social .ri-facebook-fill { color: #1877F2; }
+.kds-social .ri-instagram-fill { color: #E4405F; }
+.kds-social .ri-youtube-fill { color: #FF0000; }
+.kds-social .ri-google-fill { color: #34A853; }
+
+.kds-social:hover {
+  transform: scale(1.1);
+}
+
+
+/* Footer Social Icons */
+.kds-social {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid #ddd;   /* clean light border */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.2s ease;
+  margin: 0 6px;
+  text-decoration: none;
+}
+
+.kds-social i {
+  font-size: 20px;
+}
+
+/* Brand colors always visible */
+.kds-social .ri-facebook-fill { color: #1877F2; }
+.kds-social .ri-instagram-fill { color: #E4405F; }
+.kds-social .ri-youtube-fill { color: #FF0000; }
+.kds-social .ri-google-fill { color: #34A853; }
+
+.kds-social:hover {
+  transform: scale(1.1);
+  border-color: #aaa;
+}
+
+/* Mobile friendly alignment */
+.footer-socials {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
