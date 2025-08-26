@@ -89,7 +89,7 @@ function OrdersList() {
 
     try {
       const response = await fetch(
-        "https://men4u.xyz/v2/common/cds_kds_order_listview",
+        "https://ghanish.in/v2/common/cds_kds_order_listview",
         {
           method: "POST",
           headers: {
@@ -188,7 +188,7 @@ function OrdersList() {
       };
 
       const response = await fetch(
-        "https://men4u.xyz/v2/common/update_order_status",
+        "https://ghanish.in/v2/common/update_order_status",
         {
           method: "PATCH",
           headers: {
@@ -231,7 +231,7 @@ function OrdersList() {
 
     try {
       const response = await fetch(
-        "https://men4u.xyz/common_api/token/refresh",
+        "https://ghanish.in/common_api/token/refresh",
         {
           method: "POST",
           headers: {
@@ -385,7 +385,7 @@ function OrdersList() {
 
       try {
         const response = await fetch(
-          "https://men4u.xyz/v2/common/update_order_status",
+          "https://ghanish.in/v2/common/update_order_status",
           {
             method: "PATCH",
             headers: {

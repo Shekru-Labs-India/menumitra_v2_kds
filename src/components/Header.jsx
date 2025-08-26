@@ -42,7 +42,7 @@ function Header({ outletName }) {
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNyIsImV4cCI6MTc1MTIxNTc0NSwiaWF0IjoxNzUwNjEwOTQ1LCJqdGkiOiI3OWEwN2I5NS1lMGNlLTQ3MWMtYjFhMC1iYWIxNjIwOThjMzQiLCJyb2xlIjoiY2hlZiIsImRldmljZSI6IjhTRG9IUlU5OTFXQnNsUllDTUZofHdlYiJ9.aTe59qiGZUylv8AAYdWW-VUaDyc49Ey1puWtRjrO1CI",
       };
 
-      const response = await fetch("https://men4u.xyz/common_api/logout", {
+      const response = await fetch("https://ghanish.in/common_api/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

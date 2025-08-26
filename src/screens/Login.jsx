@@ -24,7 +24,7 @@ function Login() {
 
     try {
       setLoading(true);
-      const response = await axios.post("https://men4u.xyz/v2/common/login", {
+      const response = await axios.post("https://ghanish.in/v2/common/login", {
         mobile: mobileNumber,
         role: ["admin", "chef"],
         app_type: "pos",
@@ -81,7 +81,7 @@ function Login() {
       const deviceSessId = generateRandomSessionId(20);
       const fcmToken = "dummy_fcm_token";
 
-      const response = await axios.post("https://men4u.xyz/v2/common/verify_otp", {
+      const response = await axios.post("https://ghanish.in/v2/common/verify_otp", {
         mobile: mobileNumber,
         otp: otp,
         fcm_token: fcmToken,
