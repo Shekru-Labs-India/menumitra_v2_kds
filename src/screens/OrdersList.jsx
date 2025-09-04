@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, use } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -33,6 +33,10 @@ const styles = `
   .font_size_12 {
     font-size: 12px;
   }
+
+  .menu-item-text {
+    font-size: 18px !important; /* Increased from 16px to 18px for menu items and quantities */
+  }
 `;
 
 // Add styles to document head
@@ -52,6 +56,9 @@ function OrdersList() {
   const [outletName, setOutletName] = useState(
     localStorage.getItem("outlet_name") || ""
   );
+  const [filter, setFilter] = useState("today"); // Default to "Today"
+  const [lastRefreshTime, setLastRefreshTime] = useState(null); // Track last refresh time
+  const refreshTimeoutRef = useRef(null); // Ref to store timeout ID
 
   // Get data from localStorage that we stored during login
   const outletId = localStorage.getItem("outlet_id");
@@ -76,90 +83,71 @@ function OrdersList() {
     }
     fetchOrders();
 
-    const intervalId = setInterval(fetchOrders, 10000);
-    return () => clearInterval(intervalId);
+    // Start the initial refresh cycle
+    refreshTimeoutRef.current = setTimeout(scheduleRefresh, 60000); // First refresh after 60 seconds
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, [navigate]);
 
-  const fetchOrders = async () => {
-    if (!accessToken) {
-      console.error("No access token found");
+  const scheduleRefresh = () => {
+    fetchOrders();
+    // Schedule the next refresh exactly 60 seconds from now
+    const now = Date.now();
+    const nextRefresh = now + 60000 - (now % 60000); // Align to the next 60-second mark
+    const delay = nextRefresh - now;
+    refreshTimeoutRef.current = setTimeout(scheduleRefresh, delay);
+    console.log(`Next refresh scheduled at ${new Date(nextRefresh).toLocaleTimeString()}`);
+  };
+
+ const fetchOrders = async () => {
+  if (!accessToken) {
+    console.error("No access token found");
+    navigate("/login");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "https://men4u.xyz/v2/common/cds_kds_order_listview",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          outlet_id: outletId,
+          date_filter: filter,   // 👈 changed from filter → date_filter
+        }),
+      }
+    );
+
+    if (response.status === 401) {
+      console.error("Unauthorized access - redirecting to login");
       navigate("/login");
       return;
     }
 
-    try {
-      const response = await fetch(
-        "https://men4u.xyz/v2/common/cds_kds_order_listview",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            outlet_id: outletId,
-            device_token: deviceId,
-          }),
-        }
-      );
+    const result = await response.json();
+    console.log("API Response:", result);
 
-      if (response.status === 401) {
-        console.error("Unauthorized access - redirecting to login");
-        navigate("/login");
-        return;
-      }
+    setPlacedOrders(result.placed_orders || []);
+    setCookingOrders(result.cooking_orders || []);
+    setPaidOrders(result.paid_orders || []);
+    setServedOrders(result.served_orders || []);
+    setError(null);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    setError("Error fetching orders");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      const result = await response.json();
-      console.log("API Response:", result);
-
-      if (result) {
-        // Store current menu items for comparison
-        result.cooking_orders?.forEach((newOrder) => {
-          const existingOrder = cookingOrders.find(
-            (order) => order.order_id === newOrder.order_id
-          );
-          if (existingOrder) {
-            const existingMenuItems = existingOrder.menu_details.map(
-              (item) => item.menu_name
-            );
-            setPreviousMenuItems((prev) => ({
-              ...prev,
-              [newOrder.order_id]: existingMenuItems,
-            }));
-          }
-        });
-
-        // Update state with new orders
-        setPlacedOrders(result.placed_orders || []);
-        setCookingOrders(result.cooking_orders || []);
-        setPaidOrders(result.paid_orders || []);
-        setServedOrders(result.served_orders || []);
-        setError(null);
-
-        const allOrders = [
-          ...(result.placed_orders || []),
-          ...(result.cooking_orders || []),
-          ...(result.paid_orders || []),
-          ...(result.served_orders || []),
-        ];
-
-        if (allOrders.length > 0 && allOrders[0].outlet_name) {
-          const newOutletName = allOrders[0].outlet_name;
-          if (newOutletName !== outletName) {
-            setOutletName(newOutletName);
-            localStorage.setItem("outlet_name", newOutletName);
-          }
-        }
-      } else {
-        setError("Failed to fetch orders");
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Error fetching orders");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const updateOrderStatus = async (orderId) => {
     if (!accessToken) {
@@ -168,19 +156,16 @@ function OrdersList() {
       return;
     }
 
-    // Validate orderId
-    if (
-      !orderId ||
-      (typeof orderId !== "string" && typeof orderId !== "number")
-    ) {
+    if (!orderId || (typeof orderId !== "string" && typeof orderId !== "number")) {
+      console.error("Invalid order ID:", orderId);
       alert("Invalid order ID");
       return;
     }
 
     try {
       const data = {
-        order_id: String(orderId), // Ensure order_id is a string
-        order_status: "served", // ...other fields as required
+        order_id: String(orderId),
+        order_status: "served",
         outlet_id: outletId,
         user_id: userId,
         device_token: deviceId,
@@ -199,28 +184,42 @@ function OrdersList() {
         }
       );
 
+      console.log("Update Order Status Response:", {
+        status: response.status,
+        statusText: response.statusText,
+      });
+
       if (!response.ok) {
         if (response.status === 401) {
           const refreshResult = await refreshToken();
           if (refreshResult) {
-            return updateOrderStatus(orderId);
+            return updateOrderStatus(orderId); // Retry with new token
           } else {
+            console.error("Token refresh failed, redirecting to login");
             navigate("/login");
             return;
           }
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log("Update Order Status Result:", result);
 
       if (result.st === 1) {
-        fetchOrders();
-        alert("Order successfully updated to served");
+        fetchOrders(); // Refresh orders to move to Served section
+      } else {
+        console.error("Unexpected API response:", result);
+        alert(`Failed to update order status: ${result.msg || "Unknown error"}`);
       }
     } catch (error) {
-      console.error("Error updating order status:", error);
-      alert("Error updating order status. Please try again.");
+      console.error("Error updating order status:", error.message);
+      // Only show alert for critical errors, not if order updated
+      if (!error.message.includes("200")) { // Check if not a successful response
+        alert(`Error updating order status: ${error.message}`);
+      }
+      fetchOrders(); // Still refresh to reflect any backend changes
     }
   };
 
@@ -289,8 +288,6 @@ function OrdersList() {
     const timerRef = useRef(null);
 
     useEffect(() => {
-      console.log("Order datetime:", order?.date_time);
-
       if (!order?.date_time) {
         setIsExpired(true);
         return;
@@ -330,13 +327,10 @@ function OrdersList() {
           parseInt(seconds)
         );
 
-        console.log("Parsed order date:", orderDate);
-
         // Add 90 seconds to order time for expiry
         const expiryTime = orderDate.getTime() + 90 * 1000;
         const now = new Date().getTime();
 
-        // If the order is less than 90 seconds old, start the countdown
         if (expiryTime > now) {
           const calculateTimeLeft = () => {
             const currentTime = new Date().getTime();
@@ -344,7 +338,6 @@ function OrdersList() {
               Math.floor((expiryTime - currentTime) / 1000),
               0
             );
-            console.log("Remaining time:", remaining);
 
             if (remaining <= 0) {
               setIsExpired(true);
@@ -402,7 +395,6 @@ function OrdersList() {
           }
         );
 
-        // Add response logging
         console.log("Reject order response:", response.status);
 
         if (response.status === 401) {
@@ -481,10 +473,8 @@ function OrdersList() {
                 <p className="fs-3 fw-bold mb-0">
                   <i className="bx bx-hash"></i> {order.order_number}
                 </p>
-                <p className="mb-0 fs-5 text-c apitalize fw-semibold">
-                  {order.section_name
-                    ? `${order.section_name} - ${order.table_number}`
-                    : order.order_type}
+                <p className="mb-0 fs-5 text-capitalize fw-semibold">
+                  {order.section_name ? `${order.section_name} - ${order.table_number}` : order.order_type}
                 </p>
               </div>
             </div>
@@ -500,21 +490,21 @@ function OrdersList() {
                       key={index}
                     >
                       <div
-                        className={`fw-semibold text-capitalize ${
+                        className={`fw-semibold text-capitalize menu-item-text ${
                           isNewItem ? "text-danger" : ""
                         }`}
                       >
                         {menu.menu_name}
                       </div>
                       <div
-                        className={`fw-semibold text-capitalize ${
+                        className={`fw-semibold text-capitalize menu-item-text ${
                           isNewItem ? "text-danger" : ""
                         }`}
                       >
                         {menu.half_or_full}
                       </div>
                       <div className="d-flex align-items-center text-end gap-2">
-                        <span>× {menu.quantity}</span>
+                        <span className="fw-semibold menu-item-text">× {menu.quantity}</span>
                       </div>
 
                       {/* Comment on a new row */}
@@ -550,9 +540,16 @@ function OrdersList() {
     });
   };
 
+  // Handle filter change from Header
+ const handleFilterChange = (newFilter) => {
+  setFilter(newFilter);   // "today" or "all"
+  fetchOrders();          // refresh data with new filter
+};
+
+
   return (
     <div className="min-vh-100 d-flex flex-column bg-light">
-      <Header outletName={outletName} />
+      <Header outletName={outletName} onFilterChange={handleFilterChange} />
 
       <div className="flex-grow-1 p-3">
         {loading && <div className="text-center mt-5">Loading orders...</div>}
@@ -591,6 +588,12 @@ function OrdersList() {
                 {renderOrders(servedOrders, "success")}
               </div>
             </div>
+            {/* Display last refresh time */}
+            {lastRefreshTime && (
+              <div className="text-center mt-2 text-muted">
+                Last refreshed at: {lastRefreshTime}
+              </div>
+            )}
           </div>
         )}
       </div>
