@@ -1,50 +1,41 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/logo.png"; // ✅ Menumitra logo
 
-function Header({
-  outletName,
-  filter,
-  onFilterChange,
-  onRefresh,
-  manualMode,
-  onToggleManualMode,
-}) {
+function Header({ filter, onFilterChange, onRefresh }) {
+  const [localFilter, setLocalFilter] = useState(filter || "today");
   const [loading, setLoading] = useState(false);
-  const [isImageError, setIsImageError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
-  const settingsRef = useRef(null);
-  const image = localStorage.getItem("image");
   const userId = localStorage.getItem("user_id");
+  const outletName = localStorage.getItem("outlet_name"); // ✅ Get hotel/outlet name
   const navigate = useNavigate();
 
-  // Close settings when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
-        setShowSettings(false);
-      }
-    };
-    if (showSettings) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showSettings]);
+    setLocalFilter(filter || "today");
+  }, [filter]);
 
   useEffect(() => {
-    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleFullscreenChange = () =>
+      setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  const handleFullscreen = () => {
+  const handleFullscreen = async () => {
     const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-      elem.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+    try {
+      if (!document.fullscreenElement) {
+        await elem.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen error:", err);
     }
   };
 
@@ -79,104 +70,141 @@ function Header({
     else setShowLogoutConfirm(false);
   };
 
+  const activeBtnStyle = {
+    backgroundColor: "#0d6efd",
+    color: "#fff",
+    fontWeight: 700,
+    boxShadow: "0 0 12px rgba(13,110,253,0.7)",
+    border: "2px solid #0d6efd",
+  };
+
+  const outlineBtnStyle = { backgroundColor: "transparent" };
+  const dropdownActiveStyle = {
+    fontWeight: 700,
+    backgroundColor: "#e9f4ff",
+    color: "#0d6efd",
+  };
+
+  const changeFilter = (value) => {
+    setLocalFilter(value);
+    onFilterChange?.(value);
+  };
+
   return (
     <>
-      {/* Testing Banner */}
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "#b22222",
-          color: "#fff",
-          textAlign: "center",
-          padding: "3px 0",
-          fontSize: "14px",
-          fontWeight: "bold",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 1100,
-        }}
-      >
-        Testing Environment
-      </div>
+      {!isFullscreen && (
+        <div
+          style={{
+            width: "100%",
+            backgroundColor: "#b22222",
+            color: "#fff",
+            textAlign: "center",
+            padding: "3px 0",
+            fontSize: "14px",
+            fontWeight: "bold",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            zIndex: 1100,
+          }}
+        >
+          Testing Environment
+        </div>
+      )}
 
       {!isFullscreen && (
-        <header className="bg-white shadow-sm" style={{ marginTop: "25px", position: "relative" }}>
-          <nav className="navbar navbar-light py-2">
-            <div className="container-fluid px-5 d-flex justify-content-between align-items-center w-100">
-              {/* Logo + Outlet */}
-              {!isImageError && image ? (
-                <div className="navbar-brand d-flex align-items-center">
-                  <img
-                    src={image}
-                    alt="Hotel Logo"
-                    className="me-2 rounded-circle"
-                    style={{ width: "40px", height: "40px" }}
-                    onError={() => setIsImageError(true)}
-                  />
-                  <span className="fs-4 fw-bold">{outletName?.toUpperCase()}</span>
-                </div>
-              ) : (
-                <div className="navbar-brand d-flex align-items-center">
-                  <div
-                    className="me-2 d-flex justify-content-center align-items-center rounded-circle"
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      backgroundColor: "#ddd",
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {outletName?.[0]?.toUpperCase() || "H"}
-                  </div>
-                  <span className="fs-4 fw-bold">{outletName?.toUpperCase() || "HOTEL"}</span>
-                </div>
-              )}
+        <header
+          className="bg-white shadow-sm"
+          style={{ marginTop: "35px", position: "relative" }}
+        >
+          <nav className="navbar navbar-expand-lg navbar-light py-2">
+            <div className="container-fluid px-3 d-flex justify-content-between align-items-center">
+              
+              {/* ✅ Menumitra Logo + Name + Hotel/Outlet Name */}
+              <div className="navbar-brand d-flex align-items-center gap-2">
+                <img
+                  src={logo}
+                  alt="Menumitra Logo"
+                  style={{ height: "35px", width: "35px", objectFit: "contain" }}
+                />
+                <span className="fs-5 fw-bold text-dark">Menumitra</span>
+                {outletName && (
+                  <span className="fs-6 fw-semibold ms-2 text-muted">
+                    {outletName.toUpperCase()}
+                  </span>
+                )}
+              </div>
 
               {/* Center Title */}
               <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  color: "#333",
-                  zIndex: 1,
-                }}
+                className="position-absolute top-50 start-50 translate-middle text-center"
+                style={{ pointerEvents: "none" }}
               >
-                Kitchen Display System
+                <h1
+                  className="mb-0 text-truncate"
+                  style={{
+                    fontSize: "clamp(20px, 5vw, 36px)",
+                    fontWeight: "bold",
+                    color: "#333",
+                  }}
+                >
+                  K D S
+                </h1>
               </div>
 
-              {/* Controls */}
-              <div className="d-flex align-items-center" style={{ gap: 8 }}>
-                {/* Filter */}
-                <div className="btn-group" role="group">
+              {/* Right Section */}
+              <div className="d-flex align-items-center" style={{ gap: "12px" }}>
+                
+                {/* Mobile dropdown */}
+                <div className="dropdown d-lg-none">
+                  <button
+                    className="btn btn-outline-primary dropdown-toggle"
+                    type="button"
+                    id="filterDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    {localFilter === "today" ? "Today" : "All"}
+                  </button>
+                  <ul className="dropdown-menu" aria-labelledby="filterDropdown">
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        style={localFilter === "today" ? dropdownActiveStyle : {}}
+                        onClick={() => changeFilter("today")}
+                      >
+                        Today {localFilter === "today" ? "✓" : ""}
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        style={localFilter === "all" ? dropdownActiveStyle : {}}
+                        onClick={() => changeFilter("all")}
+                      >
+                        All {localFilter === "all" ? "✓" : ""}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Desktop filter buttons */}
+                <div className="btn-group d-none d-lg-flex" role="group">
                   <button
                     type="button"
-                    className={`btn ${filter === "today" ? "btn-primary" : "btn-outline-primary"}`}
-                    onClick={() => onFilterChange("today")}
-                    style={{
-                      backgroundColor: filter === "today" ? "#007bff" : "transparent",
-                      color: filter === "today" ? "#fff" : "#007bff",
-                      borderColor: "#007bff",
-                      transition: "background-color 0.2s, color 0.2s",
-                    }}
+                    className="btn"
+                    style={
+                      localFilter === "today" ? activeBtnStyle : outlineBtnStyle
+                    }
+                    onClick={() => changeFilter("today")}
                   >
                     Today
                   </button>
                   <button
                     type="button"
-                    className={`btn ${filter === "all" ? "btn-primary" : "btn-outline-primary"}`}
-                    onClick={() => onFilterChange("all")}
-                    style={{
-                      backgroundColor: filter === "all" ? "#007bff" : "transparent",
-                      color: filter === "all" ? "#fff" : "#007bff",
-                      borderColor: "#007bff",
-                      transition: "background-color 0.2s, color 0.2s",
-                    }}
+                    className="btn"
+                    style={localFilter === "all" ? activeBtnStyle : outlineBtnStyle}
+                    onClick={() => changeFilter("all")}
                   >
                     All
                   </button>
@@ -187,9 +215,8 @@ function Header({
                   className="btn btn-outline-secondary"
                   title="Refresh"
                   onClick={() => onRefresh?.()}
-                  style={{ fontSize: 20 }}
                 >
-                  <i className="fa-solid fa-rotate"></i>
+                  <i className="fa-solid fa-rotate" />
                 </button>
 
                 {/* Fullscreen */}
@@ -197,58 +224,27 @@ function Header({
                   className="btn btn-outline-secondary"
                   title="Fullscreen"
                   onClick={handleFullscreen}
-                  style={{ fontSize: 20 }}
                 >
-                  <i className={isFullscreen ? "bx bx-exit-fullscreen" : "bx bx-fullscreen"}></i>
+                  <i
+                    className={
+                      isFullscreen ? "bx bx-exit-fullscreen" : "bx bx-fullscreen"
+                    }
+                  />
                 </button>
 
-                {/* ⚙️ Settings */}
-                <div className="position-relative" ref={settingsRef}>
-                  <button
-                    className="btn btn-outline-secondary"
-                    onClick={() => setShowSettings((prev) => !prev)}
-                    title="Settings"
-                  >
-                    <i className="fa-solid fa-gear"></i>
-                  </button>
-
-                  {showSettings && (
-                    <div
-                      className="card shadow-sm"
-                      style={{
-                        position: "absolute",
-                        top: "110%",
-                        right: 0,
-                        zIndex: 1200,
-                        minWidth: "86px",
-                        height: "auto",
-                        padding: "6px 8px",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div className="d-flex flex-column align-items-center">
-                        <small className="text-muted mb-1">Manual Mode</small>
-                        <button
-                          className={`btn btn-sm ${manualMode ? "btn-success" : "btn-danger"}`}
-                          onClick={() => onToggleManualMode(!manualMode)}
-                          style={{ minWidth: 64, padding: "4px 10px", fontSize: 12 }}
-                        >
-                          {manualMode ? "ON" : "OFF"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Logout */}
-                <button className="btn btn-outline-danger" onClick={() => setShowLogoutConfirm(true)}>
-                  <i className="bx bx-log-out"></i>
+                <button
+                  className="btn btn-outline-danger"
+                  title="Logout"
+                  onClick={() => setShowLogoutConfirm(true)}
+                >
+                  <i className="fa-solid fa-right-from-bracket"></i>
                 </button>
               </div>
             </div>
           </nav>
 
-          {/* Optional overlay + confirm modal */}
+          {/* Logout Confirmation Modal */}
           {showLogoutConfirm && (
             <>
               <div
@@ -274,29 +270,44 @@ function Header({
                   transform: "translateX(-50%)",
                   zIndex: 1050,
                   width: "100%",
-                  maxWidth: "400px",
-                  margin: "0 auto",
+                  maxWidth: "320px",
                 }}
               >
                 <div className="modal-dialog" style={{ margin: 0 }}>
-                  <div className="modal-content">
-                    <div className="modal-header">
-                      <i
-                        className="fa-solid fa-right-from-bracket"
-                        style={{ fontSize: 24, marginRight: 10, color: "#dc3545" }}
-                      ></i>
-                      <h5 className="modal-title">Confirm Logout</h5>
-                      <button type="button" className="btn-close" onClick={() => setShowLogoutConfirm(false)}></button>
+                  <div
+                    className="modal-content"
+                    style={{
+                      border: "2px solid #dc3545",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <div className="modal-header d-flex justify-content-center">
+                      <h5 className="modal-title fw-bold text-center">
+                        <i
+                          className="fa-solid fa-right-from-bracket me-2"
+                          style={{ color: "red" }}
+                        ></i>
+                        Confirm Logout
+                      </h5>
                     </div>
                     <div className="modal-body text-center">
-                      <p>Are you sure you want to logout?</p>
+                      <p className="fw-bold">Are you sure you want to logout?</p>
                     </div>
-                    <div className="modal-footer justify-content-center">
-                      <button type="button" className="btn btn-secondary me-4" onClick={() => handleLogoutConfirm(false)}>
-                        Cancel
+                    <div className="modal-footer justify-content-between">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => handleLogoutConfirm(false)}
+                      >
+                        <i className="fa-solid fa-xmark me-1"></i> Cancel
                       </button>
-                      <button type="button" className="btn btn-danger" onClick={() => handleLogoutConfirm(true)}>
-                        Exit Me
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => handleLogoutConfirm(true)}
+                      >
+                        <i className="fa-solid fa-right-from-bracket me-2"></i> Exit Me
                       </button>
                     </div>
                   </div>

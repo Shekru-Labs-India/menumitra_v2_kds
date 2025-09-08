@@ -106,3 +106,6 @@
   }
 }
 
+html, body {
+  overflow-x: hidden; /* completely removes horizontal scroll */
+}

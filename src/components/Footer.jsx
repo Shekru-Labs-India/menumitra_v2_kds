@@ -45,7 +45,7 @@ function Footer() {
 </div>
 
             <div className="d-flex justify-content-center align-items-center mt-3 mt-md-0">
-              <i class="bx bxs-bolt fs-6 me-2"></i>
+              <i className="bx bxs-bolt fs-6 me-2"></i>
               Powered by
               <a
                 className="ps-2 text-success "
