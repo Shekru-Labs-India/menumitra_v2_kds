@@ -59,7 +59,7 @@ function OrdersList() {
     }
 
     fetchOrders();
-    refreshTimeoutRef.current = setInterval(fetchOrders, 60000); // Auto-refresh every 60 seconds
+    refreshTimeoutRef.current = setInterval(fetchOrders, 3000); // Auto-refresh every 3 seconds
 
     return () => {
       if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
