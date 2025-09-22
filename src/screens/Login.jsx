@@ -26,12 +26,14 @@ function Login() {
       setLoading(true);
       const response = await axios.post("https://men4u.xyz/v2/common/login", {
         mobile: mobileNumber,
-        role: ["admin", "chef"],
-        app_type: "pos",
+        role: ["admin", "chef", "super_owner"],
+        app_type: "kds",
       });
 
       if (response.data.detail && response.data.detail.includes("successfully")) {
         setShowOtpInput(true);
+        localStorage.setItem("user_role", response.data.user_role || response.data.role || "");
+
       } else {
         setError(response.data.detail || "Failed to send OTP");
       }
@@ -87,7 +89,7 @@ function Login() {
         fcm_token: fcmToken,
         device_id: deviceSessId,
         device_model: "web",
-        app_type: "pos",
+        app_type: "kds",
       });
 
       if (response.data && response.data.access_token) {
@@ -116,26 +118,33 @@ function Login() {
 
   return (
     <>
-      <div className="container d-flex align-items-center justify-content-center min-vh-100">
-        <div className="card rounded-4" style={{ maxWidth: "800px", height: "450px", width: "100%" }}>
-          <div className="app-brand justify-content-center mt-5">
-            <Link to="/" className="app-brand-link gap-3">
+      <div className="container">
+        <div className="card-login-page-main d-flex flex-column align-items-center justify-content-center" style={{ minWidth: "550px", maxWidth: "800px" }}>
+          <div className="login-card-main-box">
+            <div className="app-brand justify-content-center ">
+            <Link to="/" className="d-flex flex-column app-brand-link" style={{ textDecoration: "none" }}>
               <span className="app-brand-logo demo">
                 <img src={logo} alt="MenuMitra" style={{ width: "40px", height: "40px" }} />
               </span>
               <span className="app-brand-text demo text-heading fw-semibold">MenuMitra</span>
             </Link>
+            
           </div>
-          <span className="app-brand-text demo text-heading fw-semibold text-center pt-5">Kitchen Display System</span>
-          <div className="card-body pt-4">
-            <form id="formAuthentication" className="mb-3 fv-plugins-bootstrap5 fv-plugins-framework" onSubmit={showOtpInput ? handleVerifyOTP : handleSendOTP} noValidate="novalidate">
+          <div className="d-flex flex-column justify-content-center align-items-center mt-2">
+            <span className="app-brand-text demo text-heading fw-semibold text-center pt-3">Kitchen Display System</span>
+            <p className = "m-0 pb-1" style={{"color": "gray"}}>Sign in to continue to your account</p>
+          </div>
+          <div>
+            <form id="formAuthentication" className="mb-3 form-container-login fv-plugins-bootstrap5 fv-plugins-framework" onSubmit={showOtpInput ? handleVerifyOTP : handleSendOTP} noValidate="novalidate">
               {error && <div className="alert alert-danger mb-3" role="alert">{error}</div>}
-
               {!showOtpInput ? (
-                <div className="form-floating form-floating-outline mb-5 form-control-validation fv-plugins-icon-container">
+                <div className="form-floating form-floating-outline mb-3 form-control-validation fv-plugins-icon-container">
+                  <div>
+                    <label htmlFor="mobile">Mobile Number <span className="red-asterisk">*</span></label>
+                  </div>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control-login-form"
                     id="mobile"
                     name="mobile"
                     placeholder="Enter your mobile number"
@@ -152,11 +161,11 @@ function Login() {
                     }}
                     autoFocus
                   />
-                  <label htmlFor="mobile">Mobile Number</label>
+                  
                 </div>
               ) : (
                 <>
-                  <div className="text-center mb-4">Enter the 4-digit code sent to {mobileNumber}</div>
+                  <div className="text-center mt-2 mb-4">Enter the 4-digit code sent to {mobileNumber}</div>
                   <div className="d-flex justify-content-center gap-3 mb-5">
                     {otpValues.map((value, index) => (
                       <input
@@ -164,7 +173,7 @@ function Login() {
                         ref={otpRefs[index]}
                         type="text"
                         className="form-control text-center"
-                        style={{ width: "50px", height: "50px" }}
+                        style={{ width: "50px", height: "40px" }}
                         value={value}
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(index, e)}
@@ -176,26 +185,61 @@ function Login() {
                 </>
               )}
 
-              <div className="mb-5">
+              <div className="mb-2">
                 <button
-                  className="btn bg-primary text-white d-grid w-100 waves-effect waves-light"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> : showOtpInput ? "Verify OTP" : "Send OTP"}
+                    className={`btn d-grid w-100 waves-effect waves-light ${
+                      showOtpInput
+                        ? "bg-primary text-white"
+                        : mobileNumber.length === 10
+                        ? "bg-primary text-white"
+                        : "bg-secondary text-white"
+                    }`}
+                    type="submit"
+                    disabled={
+                      loading ||
+                      (!showOtpInput && mobileNumber.length !== 10) // disable if Send OTP mode and not 10 digits
+                    }
+                    style={{ height: "40px", borderRadius: "10px" }}
+                  >
+                    {loading ? (
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                    ) : showOtpInput ? (
+                      "Verify OTP"
+                    ) : (
+                      "Send OTP"
+                    )}
                 </button>
               </div>
             </form>
-
-       
-
+          </div>
+          </div>
+          <div className=" d-flex justify-content-center gap-1 mt-2">
+            <a className="liking-items" href="https://menumitra.com/" target="_blank" rel="noopener noreferrer">
+                  <p style={{"color": "gray"}}>Home</p>
+            </a>
+            <a className="liking-items" href="https://menumitra.com/book_demo/" target="_blank" rel="noopener noreferrer">
+                  <p style={{"color": "gray"}}>Book a demo</p>
+            </a>
+            <a className="liking-items" href="https://menumitra.com/about_us/" target="_blank" rel="noopener noreferrer">
+                  <p style={{"color": "gray"}}>Contact</p>
+            </a>
+            <a className="liking-items" href="https://menumitra.com/support/" target="_blank" rel="noopener noreferrer">
+                  <p style={{"color": "gray"}}>Support</p>
+            </a>
+              
+          </div>
+          <div className="card-body pt-2">
             {/* Footer brand, social icons, and version inside card */}
-            <div className="d-flex flex-column align-items-center justify-content-center mt-4">
-              <div className="d-flex align-items-center justify-content-center mb-3">
-                <img src={logo} alt="MenuMitra" className="kds-footer-logo me-2" />
+            <div className="d-flex flex-column align-items-center justify-content-center">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <img src={logo} alt="MenuMitra" className="kds-footer-logo" />
                 <h5 className="fw-normal text-black mb-0">MenuMitra</h5>
               </div>
-              <div className="kds-socials d-flex justify-content-center gap-4 mb-3">
+              <div className="kds-socials d-flex justify-content-center gap-1 mb-3">
                 <a href="https://www.facebook.com/people/Menu-Mitra/61565082412478/" className="kds-social" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                   <i className="ri-facebook-fill" />
                 </a>
@@ -210,7 +254,7 @@ function Login() {
                 </a>
               </div>
               <div className="kds-version text-center">
-                version {APP_INFO.version} <span className="mx-2">•</span> {APP_INFO.releaseDate}
+                Version {APP_INFO.version} <span className="mx-2">•</span> {APP_INFO.releaseDate}
               </div>
             </div>
           </div>

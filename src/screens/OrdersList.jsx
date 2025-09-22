@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -23,55 +30,38 @@ const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
 
-function OrdersList() {
+const OrdersList = forwardRef(({ outletId }, ref) => {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem("user_role") || "";
+
   const [placedOrders, setPlacedOrders] = useState([]);
   const [cookingOrders, setCookingOrders] = useState([]);
   const [paidOrders, setPaidOrders] = useState([]);
   const [servedOrders, setServedOrders] = useState([]);
-  const [initialLoading, setInitialLoading] = useState(true); // Only for initial load
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previousMenuItems, setPreviousMenuItems] = useState({});
-  const [outletName, setOutletName] = useState(localStorage.getItem("outlet_name") || "");
   const [filter, setFilter] = useState("today");
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
   const refreshTimeoutRef = useRef(null);
+  const autoProcessingRef = useRef(new Set());
+
 
   const [manualMode, setManualMode] = useState(() => {
     const saved = localStorage.getItem("kds_manual_mode");
     return saved ? JSON.parse(saved) : true;
   });
 
-  useEffect(() => {
-    localStorage.setItem("kds_manual_mode", JSON.stringify(manualMode));
-  }, [manualMode]);
-
-  const autoProcessingRef = useRef(new Set());
-  const outletId = localStorage.getItem("outlet_id");
+  const currentOutletId = outletId || localStorage.getItem("outlet_id");
   const userId = localStorage.getItem("user_id");
   const accessToken = localStorage.getItem("access_token");
   const deviceId = localStorage.getItem("device_id");
 
-  useEffect(() => {
-    if (!accessToken || !outletId || !userId || !deviceId) {
-      navigate("/login");
-      return;
-    }
-
-    fetchOrders();
-    refreshTimeoutRef.current = setInterval(fetchOrders, 3000); // Auto-refresh every 3 seconds
-
-    return () => {
-      if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
-    };
-  }, [navigate, filter]);
-
   const fetchOrders = useCallback(async () => {
-    if (!accessToken) {
+    if (!accessToken || !currentOutletId) {
       navigate("/login");
       return;
     }
-
     try {
       const response = await fetch("https://men4u.xyz/v2/common/cds_kds_order_listview", {
         method: "POST",
@@ -79,7 +69,7 @@ function OrdersList() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ outlet_id: outletId, date_filter: filter }),
+        body: JSON.stringify({ outlet_id: currentOutletId, date_filter: filter }),
       });
 
       if (response.status === 401) {
@@ -89,36 +79,23 @@ function OrdersList() {
 
       const result = await response.json();
 
-      // Update states only if data has changed to avoid unnecessary re-renders
-      setPlacedOrders((prev) => {
-        const newData = result.placed_orders || [];
-        return JSON.stringify(prev) !== JSON.stringify(newData) ? newData : prev;
-      });
-      setCookingOrders((prev) => {
-        const newData = result.cooking_orders || [];
-        return JSON.stringify(prev) !== JSON.stringify(newData) ? newData : prev;
-      });
-      setPaidOrders((prev) => {
-        const newData = result.paid_orders || [];
-        return JSON.stringify(prev) !== JSON.stringify(newData) ? newData : prev;
-      });
-      setServedOrders((prev) => {
-        const newData = result.served_orders || [];
-        return JSON.stringify(prev) !== JSON.stringify(newData) ? newData : prev;
-      });
+      setPlacedOrders(result.placed_orders || []);
+      setCookingOrders(result.cooking_orders || []);
+      setPaidOrders(result.paid_orders || []);
+      setServedOrders(result.served_orders || []);
       setLastRefreshTime(new Date().toLocaleTimeString());
       setError(null);
-      setInitialLoading(false); // Only set to false after first fetch
+      setInitialLoading(false);
 
       if (!manualMode && Array.isArray(result.placed_orders) && result.placed_orders.length) {
         autoAcceptPlacedOrders(result.placed_orders);
       }
-    } catch (err) {
-      console.error("Error fetching orders:", err);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
       setError("Error fetching orders");
       setInitialLoading(false);
     }
-  }, [accessToken, outletId, filter, manualMode, navigate]);
+  }, [accessToken, currentOutletId, filter, manualMode, navigate]);
 
   const autoAcceptPlacedOrders = (orders) => {
     orders.forEach((o) => {
@@ -137,12 +114,11 @@ function OrdersList() {
       navigate("/login");
       return;
     }
-
     try {
       const data = {
         order_id: String(orderId),
         order_status: nextStatus,
-        outlet_id: outletId,
+        outlet_id: currentOutletId,
         user_id: userId,
         device_token: deviceId,
         app_source: "cds_app",
@@ -201,49 +177,28 @@ function OrdersList() {
     }
   };
 
-  const updateSettings = async (newManualMode) => {
-    try {
-      const response = await fetch("https://men4u.xyz/v2/common/change_settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          outlet_id: outletId,
-          user_id: userId,
-          type: "has_save",
-          value: newManualMode ? 1 : 0,
-          app_source: "kds_app",
-        }),
-      });
+  useImperativeHandle(ref, () => ({
+    fetchOrders,
+  }));
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          const ok = await refreshToken();
-          if (ok) return updateSettings(newManualMode);
-          navigate("/login");
-          return;
-        }
-        throw new Error("Failed to update settings");
-      }
-
-      const result = await response.json();
-      if (result.detail === "Settings updated successfully") {
-        setManualMode(newManualMode);
-      } else {
-        console.error("Unexpected settings API response:", result);
-      }
-    } catch (error) {
-      console.error("Error updating settings:", error);
-      window.showToast?.("error", error.message || "Failed to update settings.");
+  useEffect(() => {
+    if (!accessToken || !currentOutletId || !userId || !deviceId) {
+      navigate("/login");
+      return;
     }
-  };
+    fetchOrders();
+    if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = setInterval(fetchOrders, 10000);
+    return () => {
+      if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
+    };
+  }, [fetchOrders]);
 
   const CircularCountdown = React.memo(({ orderId, order }) => {
     const [timeLeft, setTimeLeft] = useState(90);
     const [isExpired, setIsExpired] = useState(false);
     const timerRef = useRef(null);
+    const userRole = localStorage.getItem("user_role") || "";
 
     useEffect(() => {
       if (!order?.date_time) {
@@ -309,6 +264,7 @@ function OrdersList() {
     const percentage = (timeLeft / 90) * 100;
 
     const handleRejectOrder = async () => {
+      if (userRole === "super_owner") return;
       const token = localStorage.getItem("access_token");
       if (!token) {
         navigate("/login");
@@ -322,7 +278,7 @@ function OrdersList() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            outlet_id: outletId,
+            outlet_id: currentOutletId,
             order_id: orderId,
             order_status: "cancelled",
             user_id: userId,
@@ -368,9 +324,11 @@ function OrdersList() {
           </svg>
           <div className="timer-text-overlay text-dark">{timeLeft}s</div>
         </div>
-        <button className="btn btn-danger btn-sm" onClick={handleRejectOrder}>
-          Reject
-        </button>
+        {userRole !== "super_owner" && (
+          <button className="btn btn-danger btn-sm" onClick={handleRejectOrder}>
+            Reject
+          </button>
+        )}
       </div>
     );
   });
@@ -378,45 +336,86 @@ function OrdersList() {
   const renderOrders = useCallback(
     (orders, type) => {
       if (!Array.isArray(orders)) return null;
+      const isSuperOwner = userRole === "super_owner";
+
       return orders.map((order) => {
         const prevMenuItems = previousMenuItems[order.order_id] || [];
         const cssType = type === "placed" ? "secondary" : type;
+
         return (
           <div className="col-12" key={order.order_id}>
             <div
               className="card bg-white rounded-3"
-              style={{ height: "auto", minHeight: "unset", display: "inline-block", margin: "0 8px", width: "100%" }}
+              style={{
+                height: "auto",
+                minHeight: "unset",
+                display: "inline-block",
+                margin: "0 8px",
+                width: "100%",
+              }}
             >
               <div className={`card-header bg-${cssType} bg-opacity-10 py-2`}>
                 <div className="d-flex justify-content-between align-items-center">
                   <p className="fs-3 fw-bold mb-0">
-                    <i className="bx bx-hash"></i> {order.order_number}
+                    <i className="bx bx-hash"></i>{order.order_number}
                   </p>
                   <p className="mb-0 fs-5 text-capitalize fw-semibold">
-                    {order.section_name ? `${order.section_name} - ${order.table_number}` : order.order_type}
+                    {order.section_name
+                      ? `${order.section_name} - ${order.table_number}`
+                      : order.order_type}
                   </p>
                 </div>
               </div>
               <div className="card-body p-1">
                 {Array.isArray(order.menu_details) &&
                   order.menu_details.map((menu, index) => {
-                    const isNewItem = prevMenuItems.length > 0 && !prevMenuItems.includes(menu.menu_name);
+                    const isNewItem =
+                      prevMenuItems.length > 0 &&
+                      !prevMenuItems.includes(menu.menu_name);
                     return (
                       <div
-                        className={`d-flex flex-wrap justify-content-between align-items-center border-start border-${cssType} border-3 ps-2 mb-2`}
+                        className={`d-flex flex-wrap justify-content-between align-items-center border-${cssType} border-3 ps-2 mb-2`}
                         key={index}
+                        style={{ margin: "0px", padding: "0px" }}
                       >
-                        <div className={`fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}>
-                          {menu.menu_name}
+                        <div
+                          className={`d-flex fw-semibold text-capitalize menu-item-text ${
+                            isNewItem ? "text-danger" : ""
+                          }`}
+                          style={{ alignItems: "center" }}
+                        >
+                          <hr
+                            style={{
+                              height: "20px",
+                              backgroundColor: "#000000ff",
+                              border: "none",
+                              width: "3px",
+                              margin: "0 5px 0 0",
+                              padding: "0px",
+                            }}
+                          />
+                          <p className="mb-0">{menu.menu_name}</p>
                         </div>
-                        <div className={`fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}>
+                        <div
+                          className={`fw-semibold text-capitalize menu-item-text ${
+                            isNewItem ? "text-danger" : ""
+                          }`}
+                        >
                           {menu.half_or_full}
                         </div>
-                        <div className="d-flex align-items-center text-end gap-2">
-                          <span className="fw-semibold menu-item-text">× {menu.quantity}</span>
+                        <div
+                          className="d-flex align-items-center text-end gap-2"
+                          style={{ paddingRight: "10px" }}
+                        >
+                          <span className="fw-semibold menu-item-text">
+                            × {menu.quantity}
+                          </span>
                         </div>
                         {menu.comment && (
-                          <div className="w-100 text-start text-muted " style={{ fontSize: "0.75rem" }}>
+                          <div
+                            className="w-100 text-start text-muted"
+                            style={{ fontSize: "0.75rem" }}
+                          >
                             <span>{menu.comment}</span>
                           </div>
                         )}
@@ -424,7 +423,7 @@ function OrdersList() {
                     );
                   })}
 
-                {manualMode && type === "warning" && (
+                {manualMode && type === "warning" && !isSuperOwner && (
                   <button
                     className="btn btn-success w-100"
                     onClick={() => updateOrderStatus(order.order_id, "served")}
@@ -433,7 +432,7 @@ function OrdersList() {
                   </button>
                 )}
 
-                {manualMode && order.order_status === "placed" && (
+                {manualMode && order.order_status === "placed" && !isSuperOwner && (
                   <div className="d-flex justify-content-end mt-2">
                     <CircularCountdown orderId={order.order_id} order={order} />
                   </div>
@@ -444,23 +443,27 @@ function OrdersList() {
         );
       });
     },
-    [manualMode, previousMenuItems, updateOrderStatus]
+    [manualMode, previousMenuItems, updateOrderStatus, userRole]
   );
 
   return (
     <div className="min-vh-100 d-flex flex-column bg-light">
       <Header
-          outletName={outletName}
+        outletName={localStorage.getItem("outlet_name") || ""}
         filter={filter}
         onFilterChange={setFilter}
         onRefresh={fetchOrders}
         manualMode={manualMode}
-        onToggleManualMode={updateSettings}
+        onToggleManualMode={setManualMode}
       />
 
       <div className="flex-grow-1 p-3">
-        {initialLoading && <div className="text-center mt-5">Loading orders...</div>}
-        {error && <div className="alert alert-danger text-center mt-5">{error}</div>}
+        {initialLoading && (
+          <div className="text-center mt-5">Loading orders...</div>
+        )}
+        {error && (
+          <div className="alert alert-danger text-center mt-5">{error}</div>
+        )}
 
         {!initialLoading && !error && (
           <div className="row g-3">
@@ -495,6 +498,6 @@ function OrdersList() {
       <Footer />
     </div>
   );
-}
+});
 
 export default React.memo(OrdersList);

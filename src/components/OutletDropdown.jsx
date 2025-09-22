@@ -1,0 +1,226 @@
+import React, { useEffect, useState, useRef } from "react";
+
+const OutletDropdown = ({ onSelect, selectedOutlet }) => {
+  const [outlets, setOutlets] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(selectedOutlet || null);
+  const [show, setShow] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); 
+  const dropdownRef = useRef(null);
+
+  // Sync selectedOutlet prop with local selected state
+  useEffect(() => {
+    setSelected(selectedOutlet);
+  }, [selectedOutlet]);
+
+  // Fetch outlets on mount and whenever selectedOutlet changes
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    setLoading(true);
+    fetch("https://men4u.xyz/v2/common/get_outlet_list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        owner_id: localStorage.getItem("user_id") || 0,
+        app_source: "admin",
+        outlet_id: selectedOutlet?.outlet_id || 0,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setOutlets(Array.isArray(data.outlets) ? data.outlets : []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [selectedOutlet]);
+
+  // Filter outlets by search term (case insensitive)
+  const filteredOutlets = outlets.filter((outlet) =>
+    outlet.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle outlet selection with async API call
+const handleSelect = async (outlet) => {
+  setSelected(outlet);
+  setShow(false);
+  setSearchTerm("");
+  localStorage.setItem("outlet_id", outlet.outlet_id);
+
+  const token = localStorage.getItem("access_token");
+  if (!token) return;
+
+  // Don't await this immediately, so UI updates first
+  fetch("https://men4u.xyz/common_api/select_outlet", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      outlet_id: outlet.outlet_id,
+      app_source: "owner_app",
+    }),
+  })
+  .then((response) => {
+    if (!response.ok) {
+      console.error("Failed to select outlet");
+      return;
+    }
+    return response.json();
+  })
+  .then((result) => {
+    if (result?.settings) {
+      localStorage.setItem("selected_outlet_settings", JSON.stringify(result.settings));
+      localStorage.setItem("outlet_id", result.settings.outlet_id);
+    }
+    if (onSelect) onSelect(outlet);
+  })
+  .catch((e) => {
+    console.error("Error selecting outlet", e);
+  });
+};
+
+  // Close dropdown and clear search if click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShow(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="relative inline-block min-w-[220px]"
+      style={{ position: "relative", borderRadius: "3px" }}
+    >
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="w-100 select-outlet-btn"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "#fff",
+          color: "#b4b6b9ff",
+          fontSize: "1.12rem",
+          fontWeight: "500",
+          padding: "0.32rem 1rem",
+          border: "1.5px solid #d0d5dd",
+          borderRadius: "15px",
+          minHeight: "40px",
+          textAlign: "left",
+          boxShadow: "none",
+          outline: "none",
+          cursor: "pointer",
+          transition: "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#e6e6e6";
+          e.currentTarget.style.color = "#939090ff";
+          e.currentTarget.style.borderColor = "#dcd8d8ff";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#fff";
+          e.currentTarget.style.color = "#a5a6a9ff";
+          e.currentTarget.style.borderColor = "#d0d5dd";
+        }}
+      >
+        <span>{selected ? selected.name : "Select Outlet"}</span>
+        <span
+          style={{
+            display: "inline-block",
+            width: "24px",
+            height: "24px",
+            verticalAlign: "middle",
+            margin: "2px",
+            transition: "transform 0.3s ease",
+            transform: show ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            style={{ display: "block" }}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <polyline
+              points="6 9 12 15 18 9"
+              fill="none"
+              stroke="#878a95"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </button>
+
+      {show && (
+        <div
+          className="dropdown-menu show shadow overflow-hidden"
+          style={{ maxHeight: 290, maxWidth: 290, overflowY: "auto" }}
+        >
+          <div className="p-2">
+            <input
+              type="search"
+              className="form-control form-control-sm"
+              style={{ fontSize: "1.125rem", height: "2.5rem" }}
+              placeholder="Search outlets..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <ul
+            style={{
+              maxHeight: 250,
+              overflowY: "auto",
+              paddingLeft: 0,
+              marginBottom: 0,
+            }}
+          >
+            {loading && <li className="dropdown-item">Loading...</li>}
+            {!loading &&
+              filteredOutlets.map((outlet, index) => (
+                <li className="outlet-list-items" key={`${outlet.outlet_id}-${index}`}>
+                  <button
+                    className={`dropdown-item w-full text-left ${
+                      selected && selected.outlet_id === outlet.outlet_id
+                        ? "font-bold bg-blue-100 text-blue-600"
+                        : ""
+                    }`}
+                    onClick={() => handleSelect(outlet)}
+                  >
+                    <div>
+                      {outlet.name}{" "}
+                      <span className="text-xs text-gray-500">
+                        ({outlet.outlet_code})
+                      </span>
+                    </div>
+                    <div className="text-xs">{outlet.address}</div>
+                    <div className="text-xs text-gray-700">{outlet.owner_name}</div>
+                  </button>
+                </li>
+              ))}
+            {!loading && filteredOutlets.length === 0 && (
+              <li className="dropdown-item text-center text-muted">No outlets found</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default OutletDropdown;

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png"; // ✅ Menumitra logo
+import OutletDropdown from "./OutletDropdown";
 
-function Header({ filter, onFilterChange, onRefresh }) {
+function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
+  const [selectedOutlet, setSelectedOutlet] = useState(null);
   const [localFilter, setLocalFilter] = useState(filter || "today");
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -11,6 +13,11 @@ function Header({ filter, onFilterChange, onRefresh }) {
   const userId = localStorage.getItem("user_id");
   const outletName = localStorage.getItem("outlet_name"); // ✅ Get hotel/outlet name
   const navigate = useNavigate();
+
+  const handleOutletSelect = (outlet) => {
+    setSelectedOutlet(outlet);
+    if (onOutletSelect) onOutletSelect(outlet); // Propagate selected outlet to parent
+  };
 
   useEffect(() => {
     setLocalFilter(filter || "today");
@@ -119,7 +126,6 @@ function Header({ filter, onFilterChange, onRefresh }) {
         >
           <nav className="navbar navbar-expand-lg navbar-light py-2">
             <div className="container-fluid px-3 d-flex justify-content-between align-items-center">
-              
               {/* ✅ Menumitra Logo + Name + Hotel/Outlet Name */}
               <div className="navbar-brand d-flex align-items-center gap-2">
                 <img
@@ -128,11 +134,11 @@ function Header({ filter, onFilterChange, onRefresh }) {
                   style={{ height: "35px", width: "35px", objectFit: "contain" }}
                 />
                 <span className="fs-5 fw-bold text-dark">Menumitra</span>
-                {outletName && (
-                  <span className="fs-6 fw-semibold ms-2 text-muted">
-                    {outletName.toUpperCase()}
-                  </span>
-                )}
+                
+                <div>
+                  {/* Pass handleOutletSelect to OutletDropdown */}
+                  <OutletDropdown onSelect={handleOutletSelect} />
+                </div>
               </div>
 
               {/* Center Title */}
@@ -154,7 +160,6 @@ function Header({ filter, onFilterChange, onRefresh }) {
 
               {/* Right Section */}
               <div className="d-flex align-items-center" style={{ gap: "12px" }}>
-                
                 {/* Mobile dropdown */}
                 <div className="dropdown d-lg-none">
                   <button
