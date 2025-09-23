@@ -26,7 +26,7 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
       body: JSON.stringify({
         owner_id: localStorage.getItem("user_id") || 0,
         app_source: "admin",
-        outlet_id: selectedOutlet?.outlet_id || 0,
+        outlet_id: 0,
       }),
     })
       .then((res) => res.json())
@@ -47,40 +47,13 @@ const handleSelect = async (outlet) => {
   setSelected(outlet);
   setShow(false);
   setSearchTerm("");
+  console.log("Selected outlet:", outlet);
   localStorage.setItem("outlet_id", outlet.outlet_id);
+  localStorage.setItem("outlet_name", outlet.name);
 
   const token = localStorage.getItem("access_token");
   if (!token) return;
 
-  // Don't await this immediately, so UI updates first
-  fetch("https://men4u.xyz/common_api/select_outlet", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      outlet_id: outlet.outlet_id,
-      app_source: "owner_app",
-    }),
-  })
-  .then((response) => {
-    if (!response.ok) {
-      console.error("Failed to select outlet");
-      return;
-    }
-    return response.json();
-  })
-  .then((result) => {
-    if (result?.settings) {
-      localStorage.setItem("selected_outlet_settings", JSON.stringify(result.settings));
-      localStorage.setItem("outlet_id", result.settings.outlet_id);
-    }
-    if (onSelect) onSelect(outlet);
-  })
-  .catch((e) => {
-    console.error("Error selecting outlet", e);
-  });
 };
 
   // Close dropdown and clear search if click outside dropdown
@@ -183,40 +156,50 @@ const handleSelect = async (outlet) => {
             />
           </div>
           <ul
+            className="list-unstyled mb-0"
             style={{
+              
               maxHeight: 250,
-              overflowY: "auto",
-              paddingLeft: 0,
-              marginBottom: 0,
+    overflowY: "auto",
+    paddingLeft: 0
             }}
           >
             {loading && <li className="dropdown-item">Loading...</li>}
-            {!loading &&
-              filteredOutlets.map((outlet, index) => (
-                <li className="outlet-list-items" key={`${outlet.outlet_id}-${index}`}>
-                  <button
-                    className={`dropdown-item w-full text-left ${
-                      selected && selected.outlet_id === outlet.outlet_id
-                        ? "font-bold bg-blue-100 text-blue-600"
-                        : ""
-                    }`}
-                    onClick={() => handleSelect(outlet)}
-                  >
-                    <div>
-                      {outlet.name}{" "}
-                      <span className="text-xs text-gray-500">
+            {!loading && filteredOutlets.map((outlet, index) => (
+              <li className="outlet-list-items" key={`${outlet.outlet_id}-${index}`}>
+                <button
+                  type="button"
+                  className={`dropdown-item-outlet w-100 ${
+                    selected && selected.outlet_id === outlet.outlet_id
+                      ? "font-bold text-gray-800 bg-blue-100"
+                      : "text-dark"
+                  }`}
+
+                  onClick={() => handleSelect(outlet)}
+                  style={{ borderRadius: 8 }}
+                >
+                  <div>
+                    {outlet.name}
+                    {outlet.outlet_code && (
+                      <span className="text-xs text-secondary ms-1">
                         ({outlet.outlet_code})
                       </span>
-                    </div>
-                    <div className="text-xs">{outlet.address}</div>
-                    <div className="text-xs text-gray-700">{outlet.owner_name}</div>
-                  </button>
-                </li>
-              ))}
+                    )}
+                  </div>
+                  {outlet.address && (
+                    <div className="text-xs text-muted">{outlet.address}</div>
+                  )}
+                  {outlet.owner_name && (
+                    <div className="text-xs text-secondary">{outlet.owner_name}</div>
+                  )}
+                </button>
+              </li>
+            ))}
             {!loading && filteredOutlets.length === 0 && (
               <li className="dropdown-item text-center text-muted">No outlets found</li>
             )}
           </ul>
+
         </div>
       )}
     </div>

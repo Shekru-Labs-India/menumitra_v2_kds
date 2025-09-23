@@ -46,50 +46,77 @@ function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      const logoutData = {
-        user_id: userId,
-        role: "chef",
-        app: "chef",
-        device_token: "some-device-token",
-      };
+const handleLogout = async () => {
+  try {
+    setLoading(true);
+    const logoutData = {
+      user_id: userId,
+      role: "chef",
+      app: "chef",
+      device_token: "some-device-token",
+      "app_source" : "kds_app"
+    };
 
-      await fetch("https://men4u.xyz/common_api/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(logoutData),
-      });
+    await fetch("https://men4u.xyz/v2/common/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(logoutData),
+    });
 
-      localStorage.clear();
-      navigate("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-      window.showToast?.("error", error.message || "Failed to log out.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Clear all relevant keys including outlet related ones
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("device_id");
+    localStorage.removeItem("outlet_id");
+    localStorage.removeItem("outlet_name");
+    // Or use localStorage.clear() if you want to clear all keys
+
+    navigate("/login");
+  } catch (error) {
+    console.error("Error logging out:", error);
+    window.showToast?.("error", error.message || "Failed to log out.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleLogoutConfirm = (confirm) => {
     if (confirm) handleLogout();
     else setShowLogoutConfirm(false);
   };
 
-  const activeBtnStyle = {
-    backgroundColor: "#0d6efd",
-    color: "#fff",
-    fontWeight: 700,
-    boxShadow: "0 0 12px rgba(13,110,253,0.7)",
-    border: "2px solid #0d6efd",
+   const toggleBtnStyle = {
+    border: "none",
+    borderRadius: 0,
+    minWidth: 80,
+    fontWeight: 600,
+    fontSize: 18,
+    padding: "8px 26px",
+    boxShadow: "none",
   };
 
-  const outlineBtnStyle = { backgroundColor: "transparent" };
+  const activeBtnStyle = {
+    ...toggleBtnStyle,
+    background: "#1673ff",
+    color: "#fff",
+};
+
+const nonActiveBtnStyle = {
+  ...toggleBtnStyle,
+  background: "#fff",
+  color: "#1673ff",
+};
+
+
+
   const dropdownActiveStyle = {
     fontWeight: 700,
     backgroundColor: "#e9f4ff",
     color: "#0d6efd",
+    
   };
 
   const changeFilter = (value) => {
@@ -131,7 +158,7 @@ function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
                 <img
                   src={logo}
                   alt="Menumitra Logo"
-                  style={{ height: "35px", width: "35px", objectFit: "contain" }}
+                  style={{ height: "40px", width: "40px", objectFit: "contain" }}
                 />
                 <span className="fs-5 fw-bold text-dark">Menumitra</span>
                 
@@ -194,30 +221,27 @@ function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
                 </div>
 
                 {/* Desktop filter buttons */}
-                <div className="btn-group d-none d-lg-flex" role="group">
-                  <button
-                    type="button"
-                    className="btn"
-                    style={
-                      localFilter === "today" ? activeBtnStyle : outlineBtnStyle
-                    }
-                    onClick={() => changeFilter("today")}
-                  >
-                    Today
-                  </button>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={localFilter === "all" ? activeBtnStyle : outlineBtnStyle}
-                    onClick={() => changeFilter("all")}
-                  >
-                    All
-                  </button>
-                </div>
+                <div className="custom-toggle-group">
+                    <button
+                      type="button"
+                      style={localFilter === "today" ? activeBtnStyle : nonActiveBtnStyle}
+                      onClick={() => changeFilter("today")}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      style={localFilter === "all" ? activeBtnStyle : nonActiveBtnStyle}
+                      onClick={() => changeFilter("all")}
+                    >
+                      All
+                    </button>
+                  </div>
+
 
                 {/* Refresh */}
                 <button
-                  className="btn btn-outline-secondary"
+                  className="header-icons-items btn btn-outline-secondary"
                   title="Refresh"
                   onClick={() => onRefresh?.()}
                 >
@@ -226,7 +250,7 @@ function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
 
                 {/* Fullscreen */}
                 <button
-                  className="btn btn-outline-secondary"
+                  className="header-icons-items btn btn-outline-secondary"
                   title="Fullscreen"
                   onClick={handleFullscreen}
                 >
@@ -239,7 +263,7 @@ function Header({ filter, onFilterChange, onRefresh, onOutletSelect }) {
 
                 {/* Logout */}
                 <button
-                  className="btn btn-outline-danger"
+                  className="header-icons-items btn btn-outline-danger"
                   title="Logout"
                   onClick={() => setShowLogoutConfirm(true)}
                 >

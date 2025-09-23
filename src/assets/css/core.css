@@ -4063,7 +4063,8 @@ fieldset:disabled .btn {
     white-space: nowrap;
     background-color: rgba(0, 0, 0, 0);
     border: 0;
-    border-radius: var(--bs-dropdown-item-border-radius, 0)
+    border-radius: var(--bs-dropdown-item-border-radius, 0);
+    border: 2px solid blue;
 }
 
 .dropdown-item:hover,

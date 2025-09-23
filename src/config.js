@@ -21,6 +21,6 @@ export const VAPID_KEY = "BGsWfw7acs_yXMa_bcWfw-49_MQkV8MdSOrCih9OO-v9pQ7AvKA2ni
 export const APP_INFO = {
   name: "MenuMitra",
   version: "2.0",
-  releaseDate: "13 Aug 2025",
+  releaseDate: "23 Sept 2025",
 };
 

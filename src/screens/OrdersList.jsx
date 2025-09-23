@@ -69,7 +69,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ outlet_id: currentOutletId, date_filter: filter }),
+        body: JSON.stringify({ outlet_id: Number(currentOutletId), date_filter: filter }),
       });
 
       if (response.status === 401) {
@@ -78,6 +78,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       }
 
       const result = await response.json();
+      console.log("Fetched orders:", result);
 
       setPlacedOrders(result.placed_orders || []);
       setCookingOrders(result.cooking_orders || []);
@@ -121,7 +122,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         outlet_id: currentOutletId,
         user_id: userId,
         device_token: deviceId,
-        app_source: "cds_app",
+        app_source: "kds_app",
       };
 
       const response = await fetch("https://men4u.xyz/v2/common/update_order_status", {
@@ -144,12 +145,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      const result = await response.json();
-      if (result.st === 1) {
-        fetchOrders();
-      } else {
-        console.error("Unexpected API response:", result);
-      }
     } catch (error) {
       console.error("Error updating order status:", error.message);
       fetchOrders();
@@ -195,7 +190,8 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
   }, [fetchOrders]);
 
   const CircularCountdown = React.memo(({ orderId, order }) => {
-    const [timeLeft, setTimeLeft] = useState(90);
+    console.log("Rendering CircularCountdown for orderId:", orderId);
+    const [timeLeft, setTimeLeft] = useState(40);
     const [isExpired, setIsExpired] = useState(false);
     const timerRef = useRef(null);
     const userRole = localStorage.getItem("user_role") || "";
@@ -279,24 +275,17 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
           },
           body: JSON.stringify({
             outlet_id: currentOutletId,
-            order_id: orderId,
+            order_id: String(orderId),
             order_status: "cancelled",
             user_id: userId,
             device_token: deviceId,
+            "app_source": "kds_app",
           }),
         });
 
         if (response.status === 401) {
           navigate("/login");
           return;
-        }
-
-        const result = await response.json();
-        if (result.st === 1) {
-          alert(result.msg);
-          fetchOrders();
-        } else {
-          alert(result.msg || "Failed to cancel order");
         }
       } catch (error) {
         console.error("Error cancelling order:", error);
@@ -332,6 +321,11 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       </div>
     );
   });
+  const foodTypeColors = {
+      veg: "#28a745",    // green
+      nonveg: "#f21717", // red
+      vegan: "#ffc107",  // yellow
+    };
 
   const renderOrders = useCallback(
     (orders, type) => {
@@ -361,9 +355,11 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                   </p>
                   <p className="mb-0 fs-5 text-capitalize fw-semibold">
                     {order.section_name
-                      ? `${order.section_name} - ${order.table_number}`
-                      : order.order_type}
+                      ? `${order.section_name}`
+                      : `${order.order_type} - ${order.table_number.join(", ")}`
+                    }
                   </p>
+
                 </div>
               </div>
               <div className="card-body p-1">
@@ -372,6 +368,9 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                     const isNewItem =
                       prevMenuItems.length > 0 &&
                       !prevMenuItems.includes(menu.menu_name);
+                    
+                    const hrColor = foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
+
                     return (
                       <div
                         className={`d-flex flex-wrap justify-content-between align-items-center border-${cssType} border-3 ps-2 mb-2`}
@@ -387,7 +386,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                           <hr
                             style={{
                               height: "20px",
-                              backgroundColor: "#000000ff",
+                              backgroundColor: hrColor,
                               border: "none",
                               width: "3px",
                               margin: "0 5px 0 0",
@@ -445,8 +444,10 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     },
     [manualMode, previousMenuItems, updateOrderStatus, userRole]
   );
+  const outletName= localStorage.getItem("outlet_name")
 
   return (
+
     <div className="min-vh-100 d-flex flex-column bg-light">
       <Header
         outletName={localStorage.getItem("outlet_name") || ""}
@@ -456,8 +457,21 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         manualMode={manualMode}
         onToggleManualMode={setManualMode}
       />
+      {!outletName ? (
+        <div className="d-flex flex-column min-vh-100 justify-content-between">
+          <div>
+            <div className="alert alert-warning text-center mb-0 rounded-0">
+              Please select an outlet to view orders.
+            </div>
+          </div>
+          <footer className="">
+            <Footer />
+          </footer>
+        </div>
 
-      <div className="flex-grow-1 p-3">
+      ) : (
+        <div className="d-flex flex-column flex-grow-1">
+          <div className="flex-grow-1 p-3">
         {initialLoading && (
           <div className="text-center mt-5">Loading orders...</div>
         )}
@@ -483,7 +497,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
 
             <div className="col-4">
               <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-success py-2 d-flex align-items-center justify-content-center rounded-4">
-                Served ({servedOrders.length})
+                Pick Up ({servedOrders.length})
               </h4>
               <div className="row g-3">{renderOrders(servedOrders, "success")}</div>
             </div>
@@ -493,9 +507,16 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
             )}
           </div>
         )}
-      </div>
+          </div>
+          <div className="footer mt-auto">
+            <Footer />
+          </div>
+        </div>
+      )
+      }
+      
 
-      <Footer />
+      
     </div>
   );
 });
