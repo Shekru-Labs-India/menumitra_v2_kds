@@ -105,10 +105,21 @@
   }
 }
 
-html, body {
-  overflow-x: hidden; /* completely removes horizontal scroll */
+body, html {
+  background: #f7f8fc;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', Arial, sans-serif;
 }
 
+.input-element-login {
+  height: 50px; /* Also override inline width */
+  width: 70px !important;
+  font-size: 1.5rem; /* Adjust font size if desired */
+  padding: 10px;
+  box-sizing: border-box;
+}
 
 /* LoginScreen.css */
 .login-screen-container {
@@ -195,6 +206,15 @@ html, body {
   margin: 10px;
 }
 
+.logout-box-container{
+  margin-left: 20px !important;
+  margin-right: 20px !important;
+}
+.links-container {
+  border-bottom: 1.5px solid #d0d5dd; /* subtle horizontal line */
+  padding-bottom: 8px; /* space between links and line */
+  margin-bottom: 12px; /* space after line */
+}
 
 .outlet-list-items {
   border: 1.5px solid #bbb;
@@ -225,11 +245,6 @@ html, body {
   font-weight: bold !important;
 }
 
-.resend-btn-otp{
-  border: none;
-  background-color: transparent;
-  color: #0d6efd;
-}
 
 .header-filter-item{
   border: 2px solid blue !important;
@@ -246,4 +261,25 @@ html, body {
 .header-icons-items{
   height: 45px;
   width: 45px;
+}
+.refresh-btn-heder{
+  border-radius: 5px;
+  border: 1px solid gray;
+  color: gray;
+  background-color: transparent;
+}
+.dropdown-menu.show {
+  max-height: 290px !important;
+  max-width: 290px !important;
+  overflow-y: auto !important; /* Scrollbar only here */
+  overflow-x: hidden !important;
+  padding-right: 6px;
+  box-sizing: border-box;
+}
+
+.dropdown-menu.show ul {
+  max-height: none !important;  /* Remove internal scrollbar */
+  overflow-y: visible !important; /* Remove internal scrollbar */
+  margin-right: 0 !important;
+  padding-left: 0 !important;
 }

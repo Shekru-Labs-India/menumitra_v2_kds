@@ -241,7 +241,7 @@ const nonActiveBtnStyle = {
 
                 {/* Refresh */}
                 <button
-                  className="header-icons-items btn btn-outline-secondary"
+                  className="header-icons-items refresh-btn-heder"
                   title="Refresh"
                   onClick={() => onRefresh?.()}
                 >
@@ -323,17 +323,17 @@ const nonActiveBtnStyle = {
                     <div className="modal-body text-center">
                       <p className="fw-bold">Are you sure you want to logout?</p>
                     </div>
-                    <div className="modal-footer justify-content-between">
+                    <div className="modal-footer justify-content-between logout-box-container">
                       <button
                         type="button"
-                        className="btn btn-secondary"
+                        className="btn btn-secondary mt-2"
                         onClick={() => handleLogoutConfirm(false)}
                       >
                         <i className="fa-solid fa-xmark me-1"></i> Cancel
                       </button>
                       <button
                         type="button"
-                        className="btn btn-danger"
+                        className="btn btn-danger mt-2"
                         onClick={() => handleLogoutConfirm(true)}
                       >
                         <i className="fa-solid fa-right-from-bracket me-2"></i> Exit Me

@@ -157,11 +157,10 @@ const handleSelect = async (outlet) => {
           </div>
           <ul
             className="list-unstyled mb-0"
-            style={{
-              
+            style={{  
               maxHeight: 250,
-    overflowY: "auto",
-    paddingLeft: 0
+              overflowY: "auto",
+              paddingLeft: 0
             }}
           >
             {loading && <li className="dropdown-item">Loading...</li>}

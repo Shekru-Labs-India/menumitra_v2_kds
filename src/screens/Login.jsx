@@ -175,13 +175,13 @@ function Login() {
                 </div>
 
                 {!showOtpInput ? (
-                  <div className="form-floating form-floating-outline mb-3 form-control-validation fv-plugins-icon-container">
+                  <div className="form-floating form-floating-outline mb-3 form-control-validation fv-plugins-icon-container mr-4 ml-4">
                     <div>
                       <label htmlFor="mobile">Mobile Number <span className="red-asterisk">*</span></label>
                     </div>
                     <input
                       type="text"
-                      className="form-control-login-form"
+                      className="form-control-login-form mt-2 mb-2"
                       id="mobile"
                       name="mobile"
                       placeholder="Enter your mobile number"
@@ -208,33 +208,59 @@ function Login() {
                           key={index}
                           ref={otpRefs[index]}
                           type="text"
-                          className="form-control text-center"
-                          style={{ width: "50px", height: "40px" }}
+                          className="form-control text-center input-element-login"
+                          // Remove style to avoid conflict
                           value={value}
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleKeyDown(index, e)}
                           maxLength={1}
                           autoFocus={index === 0}
                         />
+
                       ))}
                     </div>
+                  
 
-                    <div className="d-flex justify-content-center align-items-center mb-4">
+                    <div className="d-flex justify-content-between align-items-center" style={{ Width: "100%", marginLeft: "60px", marginRight: "60px" }}>
                       <button
                         type="button"
-                        className={`resend-btn-otp  ${resendCooldown > 0 ? "disabled" : ""}`}
                         onClick={handleResendOTP}
                         disabled={resendCooldown > 0}
+                        className="text-base font-medium focus:outline-none focus:underline mb-3 "
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: resendCooldown > 0 ? 'gray' : '#2563eb', // Gray when disabled, blue otherwise
+                        }}
                       >
                         {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
                       </button>
+                      <button
+                        className="text-base font-medium focus:outline-none focus:underline mb-3"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: '#2563eb' // Always blue color here
+                        }}
+                        type="button"
+                        onClick={() => {
+                          setShowOtpInput(false);
+                          setOtpValues(["", "", "", ""]);
+                          setError("");
+                        }}
+                      >
+                        Back to login
+                      </button>
                     </div>
+
                   </>
                 )}
 
-                <div className="mb-2">
+                <div className="mb-3 ml-4 mr-4">
                   <button
-                    className={`btn d-grid w-100 waves-effect waves-light ${
+                    className={`btn mb-3 d-grid w-100 waves-effect waves-light ${
                       showOtpInput
                         ? "bg-primary text-white"
                         : mobileNumber.length === 10
@@ -246,7 +272,7 @@ function Login() {
                       loading ||
                       (!showOtpInput && mobileNumber.length !== 10) // disable if Send OTP mode and not 10 digits
                     }
-                    style={{ height: "40px", borderRadius: "10px" }}
+                    style={{ height: "45px", borderRadius: "10px" }}
                   >
                     {loading ? (
                       <span
@@ -265,47 +291,25 @@ function Login() {
             </div>
           </div>
 
-          <div className="d-flex justify-content-center gap-1 mt-2">
-            <a
-              className="liking-items"
-              href="https://menumitra.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <div className="d-flex justify-content-center gap-1 mt-2 links-container">
+            <a className="liking-items" href="https://menumitra.com/" target="_blank" rel="noopener noreferrer">
               <p style={{ color: "gray" }}>Home</p>
             </a>
-            <a
-              className="liking-items"
-              href="https://menumitra.com/book_demo/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="liking-items" href="https://menumitra.com/book_demo/" target="_blank" rel="noopener noreferrer">
               <p style={{ color: "gray" }}>Book a demo</p>
             </a>
-            <a
-              className="liking-items"
-              href="https://menumitra.com/about_us/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="liking-items" href="https://menumitra.com/about_us/" target="_blank" rel="noopener noreferrer">
               <p style={{ color: "gray" }}>Contact</p>
             </a>
-            <a
-              className="liking-items"
-              href="https://menumitra.com/support/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a className="liking-items" href="https://menumitra.com/support/" target="_blank" rel="noopener noreferrer">
               <p style={{ color: "gray" }}>Support</p>
             </a>
           </div>
 
+
           <div className="card-body pt-2">
             <div className="d-flex flex-column align-items-center justify-content-center">
-              <div className="d-flex align-items-center justify-content-center mb-2">
-                <img src={logo} alt="MenuMitra" className="kds-footer-logo" />
-                <h5 className="fw-normal text-black mb-0">MenuMitra</h5>
-              </div>
+              
               <div className="kds-socials d-flex justify-content-center gap-1 mb-3">
                 <a href="https://www.facebook.com/people/Menu-Mitra/61565082412478/" className="kds-social" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                   <i className="ri-facebook-fill" />

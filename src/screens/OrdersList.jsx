@@ -183,7 +183,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     }
     fetchOrders();
     if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
-    refreshTimeoutRef.current = setInterval(fetchOrders, 10000);
+    refreshTimeoutRef.current = setInterval(fetchOrders, 1000);
     return () => {
       if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
     };
