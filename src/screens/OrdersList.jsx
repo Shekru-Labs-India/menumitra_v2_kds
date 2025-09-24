@@ -45,7 +45,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
   const refreshTimeoutRef = useRef(null);
   const autoProcessingRef = useRef(new Set());
 
-
   const [manualMode, setManualMode] = useState(() => {
     const saved = localStorage.getItem("kds_manual_mode");
     return saved ? JSON.parse(saved) : true;
@@ -143,7 +142,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
-
     } catch (error) {
       console.error("Error updating order status:", error.message);
       fetchOrders();
@@ -278,7 +276,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
             order_status: "cancelled",
             user_id: userId,
             device_token: deviceId,
-            "app_source": "kds_app",
+            app_source: "kds_app",
           }),
         });
 
@@ -292,6 +290,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       }
     };
 
+    // Only show Reject button if kds_button_enabled is 1 for this order
     return (
       <div className="d-flex align-items-center gap-2">
         <div className="circular-countdown">
@@ -312,7 +311,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
           </svg>
           <div className="timer-text-overlay text-dark">{timeLeft}s</div>
         </div>
-        {userRole !== "super_owner" && (
+        {userRole !== "super_owner" && order.kds_button_enabled === 1 && (
           <button className="btn btn-danger btn-sm" onClick={handleRejectOrder}>
             Reject
           </button>
@@ -320,11 +319,12 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       </div>
     );
   });
+
   const foodTypeColors = {
-      veg: "#00c82fff",    // green
-      nonveg: "#cc0000ff", // red
-      vegan: "#c09000ff",  // yellow
-    };
+    veg: "#00c82fff",
+    nonveg: "#cc0000ff",
+    vegan: "#c09000ff",
+  };
 
   const renderOrders = useCallback(
     (orders, type) => {
@@ -336,7 +336,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         const cssType = type === "placed" ? "secondary" : type;
 
         return (
-          <div className="col-12" key={order.order_id}>
+          <div className="col-12" key={order.order_id} style={{ marginRight: "20px", marginLeft: "10px" }}>
             <div
               className="card bg-white rounded-3"
               style={{
@@ -366,7 +366,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                     const isNewItem =
                       prevMenuItems.length > 0 &&
                       !prevMenuItems.includes(menu.menu_name);
-                    
+
                     const hrColor = foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
 
                     return (
@@ -376,9 +376,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                         style={{ margin: "0px", padding: "0px" }}
                       >
                         <div
-                          className={`d-flex fw-semibold text-capitalize menu-item-text ${
-                            isNewItem ? "text-danger" : ""
-                          }`}
+                          className={`d-flex fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}
                           style={{ alignItems: "center" }}
                         >
                           <hr
@@ -394,9 +392,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                           <p className="mb-0">{menu.menu_name}</p>
                         </div>
                         <div
-                          className={`fw-semibold text-capitalize menu-item-text ${
-                            isNewItem ? "text-danger" : ""
-                          }`}
+                          className={`fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}
                         >
                           {menu.half_or_full}
                         </div>
@@ -420,7 +416,8 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                     );
                   })}
 
-                {manualMode && type === "warning" && !isSuperOwner && (
+                {/* Only show Complete Order button if kds_button_enabled = 1 */}
+                {manualMode && type === "warning" && !isSuperOwner && order.kds_button_enabled === 1 && (
                   <button
                     className="btn btn-success w-100"
                     onClick={() => updateOrderStatus(order.order_id, "served")}
@@ -429,6 +426,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                   </button>
                 )}
 
+                {/* Render countdown */}
                 {manualMode && order.order_status === "placed" && !isSuperOwner && (
                   <div className="d-flex justify-content-end mt-2">
                     <CircularCountdown orderId={order.order_id} order={order} />
@@ -442,10 +440,9 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     },
     [manualMode, previousMenuItems, updateOrderStatus, userRole]
   );
-  const outletName= localStorage.getItem("outlet_name")
+  const outletName = localStorage.getItem("outlet_name");
 
   return (
-
     <div className="min-vh-100 d-flex flex-column bg-light">
       <Header
         outletName={localStorage.getItem("outlet_name") || ""}
@@ -463,52 +460,45 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
             </div>
           </div>
         </div>
-
       ) : (
         <div className="d-flex flex-column flex-grow-1">
           <div className="flex-grow-1 p-3">
-        {initialLoading && (
-          <div className="text-center mt-5">Loading orders...</div>
-        )}
-        {error && (
-          <div className="alert alert-danger text-center mt-5">{error}</div>
-        )}
-
-        {!initialLoading && !error && (
-          <div className="row g-3">
-            <div className="col-4">
-              <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-secondary py-2 d-flex align-items-center justify-content-center rounded-4">
-                Placed ({placedOrders.length})
-              </h4>
-              <div className="row g-3">{renderOrders(placedOrders, "secondary")}</div>
-            </div>
-
-            <div className="col-4">
-              <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-warning py-2 d-flex align-items-center justify-content-center rounded-4">
-                Cooking ({cookingOrders.length})
-              </h4>
-              <div className="row g-3 justify-content-center">{renderOrders(cookingOrders, "warning")}</div>
-            </div>
-
-            <div className="col-4">
-              <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-success py-2 d-flex align-items-center justify-content-center rounded-4">
-                Pick Up ({servedOrders.length})
-              </h4>
-              <div className="row g-3">{renderOrders(servedOrders, "success")}</div>
-            </div>
-
-            {lastRefreshTime && (
-              <div className="text-center mt-2 text-muted">Last refreshed at: {lastRefreshTime}</div>
+            {initialLoading && (
+              <div className="text-center mt-5">Loading orders...</div>
             )}
-          </div>
-        )}
+            {error && (
+              <div className="alert alert-danger text-center mt-5">{error}</div>
+            )}
+
+            {!initialLoading && !error && (
+              <div className="row g-3">
+                <div className="col-4">
+                  <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-secondary py-2 d-flex align-items-center justify-content-center rounded-4">
+                    Placed ({placedOrders.length})
+                  </h4>
+                  <div className="row g-3">{renderOrders(placedOrders, "secondary")}</div>
+                </div>
+                <div className="col-4">
+                  <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-warning py-2 d-flex align-items-center justify-content-center rounded-4">
+                    Cooking ({cookingOrders.length})
+                  </h4>
+                  <div className="row g-3 justify-content-center">{renderOrders(cookingOrders, "warning")}</div>
+                </div>
+                <div className="col-4">
+                  <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-success py-2 d-flex align-items-center justify-content-center rounded-4">
+                    Pick Up ({servedOrders.length})
+                  </h4>
+                  <div className="row g-3">{renderOrders(servedOrders, "success")}</div>
+                </div>
+                {lastRefreshTime && (
+                  <div className="text-center mt-2 text-muted">Last refreshed at: {lastRefreshTime}</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )
       }
-      
-
-      
     </div>
   );
 });
