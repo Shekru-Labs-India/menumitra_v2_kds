@@ -161,7 +161,7 @@ function Login() {
                 <span className="app-brand-logo demo">
                   <img src={logo} alt="MenuMitra" style={{ width: "40px", height: "40px" }} />
                 </span>
-                <span className="app-brand-text demo text-heading fw-semibold">MenuMitra</span>
+                <span className="app-brand-text demo text-heading fw-semibold mt-3">MenuMitra</span>
               </Link>
             </div>
             <div className="d-flex flex-column justify-content-center align-items-center mt-2">
@@ -270,24 +270,12 @@ function Login() {
                         : "bg-secondary text-white"
                     }`}
                     type="submit"
-                    disabled={
-                      loading ||
-                      (!showOtpInput && mobileNumber.length !== 10) // disable if Send OTP mode and not 10 digits
-                    }
+                    disabled={!showOtpInput && mobileNumber.length !== 10} // disable if Send OTP mode and not 10 digits
                     style={{ height: "45px", borderRadius: "10px" }}
                   >
-                    {loading ? (
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                    ) : showOtpInput ? (
-                      "Verify OTP"
-                    ) : (
-                      "Send OTP"
-                    )}
+                    {showOtpInput ? "Verify OTP" : "Send OTP"}
                   </button>
+
                 </div>
               </form>
             </div>

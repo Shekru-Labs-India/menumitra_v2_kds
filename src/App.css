@@ -85,6 +85,8 @@
 .app-brand-text {
   font-weight: normal; /* Removes bold (equivalent to fw-normal) */
   color: #333; /* Default color, adjust if needed */
+  text-transform: capitalize !important;
+  font-size: 23px !important;
 }
 
 /* Responsive adjustments */
@@ -210,7 +212,18 @@ body, html {
   justify-content: center;
   padding: 0px;
 }
-
+.main-kds-view-container{
+  width: 100% !important;
+}
+.child-container{
+  width: 33% !important;
+}
+.order-tables-orders{
+  padding-left: 10px;
+}
+.order-tables-orders-number{
+  padding-right: 10px;
+}
 .outlet-list-items{
   border: 2px solid gray;
   border-radius: 10px;
