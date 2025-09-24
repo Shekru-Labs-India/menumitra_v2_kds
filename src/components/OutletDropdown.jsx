@@ -10,7 +10,11 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
 
   // Sync selectedOutlet prop with local selected state
   useEffect(() => {
-    setSelected(selectedOutlet);
+
+    const savedName = localStorage.getItem("outlet_name");
+    if (savedName) {
+      setSelected({ name: savedName });
+  }
   }, [selectedOutlet]);
 
   // Fetch outlets on mount and whenever selectedOutlet changes
@@ -74,7 +78,7 @@ const handleSelect = async (outlet) => {
     <div
       ref={dropdownRef}
       className="relative inline-block min-w-[220px]"
-      style={{ position: "relative", borderRadius: "3px" }}
+      style={{ position: "relative", borderRadius: "3px", width: "180px" }}
     >
       <button
         type="button"
@@ -143,7 +147,7 @@ const handleSelect = async (outlet) => {
       {show && (
         <div
           className="dropdown-menu show shadow overflow-hidden"
-          style={{ maxHeight: 290, maxWidth: 290, overflowY: "auto" }}
+          style={{ maxHeight: 290, maxWidth: 290, overflowY: "auto", backgroundColor: "#d1d3d4"}}
         >
           <div className="p-2">
             <input
@@ -177,8 +181,8 @@ const handleSelect = async (outlet) => {
                   onClick={() => handleSelect(outlet)}
                   style={{ borderRadius: 8 }}
                 >
-                  <div>
-                    {outlet.name}
+                  <div className="d-flex align-items-center">
+                    <p className="text-capitalize m-0 p-0">{outlet.name}</p>
                     {outlet.outlet_code && (
                       <span className="text-xs text-secondary ms-1">
                         ({outlet.outlet_code})

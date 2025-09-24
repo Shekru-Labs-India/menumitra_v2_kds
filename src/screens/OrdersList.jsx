@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 
 const styles = `
   .circular-countdown {
@@ -322,9 +321,9 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     );
   });
   const foodTypeColors = {
-      veg: "#28a745",    // green
-      nonveg: "#f21717", // red
-      vegan: "#ffc107",  // yellow
+      veg: "#00c82fff",    // green
+      nonveg: "#cc0000ff", // red
+      vegan: "#c09000ff",  // yellow
     };
 
   const renderOrders = useCallback(
@@ -355,11 +354,10 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                   </p>
                   <p className="mb-0 fs-5 text-capitalize fw-semibold">
                     {order.section_name
-                      ? `${order.section_name}`
-                      : `${order.order_type} - ${order.table_number.join(", ")}`
+                      ? order.section_name
+                      : `${order.order_type}${order.table_number?.length ? ` - ${order.table_number.join(", ")}` : ""}`
                     }
                   </p>
-
                 </div>
               </div>
               <div className="card-body p-1">
@@ -464,9 +462,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
               Please select an outlet to view orders.
             </div>
           </div>
-          <footer className="">
-            <Footer />
-          </footer>
         </div>
 
       ) : (
@@ -507,9 +502,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
             )}
           </div>
         )}
-          </div>
-          <div className="footer mt-auto">
-            <Footer />
           </div>
         </div>
       )

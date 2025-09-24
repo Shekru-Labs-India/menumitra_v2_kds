@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import OutletDropdown from "../components/OutletDropdown";
 import Header from "../components/Header";
 import OrdersList from "../components/OrdersList";
-import Footer from "../components/Footer";
 
 function OrdersScreen() {
   const [selectedOutlet, setSelectedOutlet] = useState(() => {
@@ -43,7 +42,6 @@ function OrdersScreen() {
         ref={ordersListRef}
         outletId={selectedOutlet?.outlet_id}
       />
-      <Footer />
     </div>
   );
 }

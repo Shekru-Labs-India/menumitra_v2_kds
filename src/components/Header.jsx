@@ -311,29 +311,29 @@ const nonActiveBtnStyle = {
                       boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                     }}
                   >
-                    <div className="modal-header d-flex justify-content-center">
+                    <div className="modal-header d-flex justify-content-center fw-bold">
                       <h5 className="modal-title fw-bold text-center">
                         <i
-                          className="fa-solid fa-right-from-bracket me-2"
+                          className="fa-solid fa-right-from-bracket me-2 mb-3"
                           style={{ color: "red" }}
                         ></i>
                         Confirm Logout
                       </h5>
                     </div>
-                    <div className="modal-body text-center">
-                      <p className="fw-bold">Are you sure you want to logout?</p>
+                    <div className="modal-body text-center ">
+                      <p className="fw-bold pt-2">Are you sure you want to logout?</p>
                     </div>
-                    <div className="modal-footer justify-content-between logout-box-container">
+                    <div className="modal-footer justify-content-between logout-box-container pt-3">
                       <button
                         type="button"
-                        className="btn btn-secondary mt-2"
+                        className="btn btn-secondary"
                         onClick={() => handleLogoutConfirm(false)}
                       >
                         <i className="fa-solid fa-xmark me-1"></i> Cancel
                       </button>
                       <button
                         type="button"
-                        className="btn btn-danger mt-2"
+                        className="btn btn-danger "
                         onClick={() => handleLogoutConfirm(true)}
                       >
                         <i className="fa-solid fa-right-from-bracket me-2"></i> Exit Me

@@ -170,8 +170,10 @@ function Login() {
             </div>
             <div>
               <form id="formAuthentication" className="mb-3 form-container-login fv-plugins-bootstrap5 fv-plugins-framework" onSubmit={showOtpInput ? handleVerifyOTP : handleSendOTP} noValidate="novalidate">
-                <div>
-                  {error && <div className="alert alert-danger text-center" role="alert">{error}</div>}
+                <div className="d-flex justify-content-center">
+                  <div className="mr-3 ml-3" style={{width: "60%"}}>
+                    {error && <div className="alert alert-danger mr-3 ml-3 text-center" role="alert">{error}</div>}
+                  </div>
                 </div>
 
                 {!showOtpInput ? (
