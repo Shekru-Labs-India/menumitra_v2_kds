@@ -5,19 +5,23 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(selectedOutlet || null);
   const [show, setShow] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // Sync selectedOutlet prop with local selected state
+  // Sync local selected state with selectedOutlet prop
   useEffect(() => {
-
-    const savedName = localStorage.getItem("outlet_name");
-    if (savedName) {
-      setSelected({ name: savedName });
-  }
+    if (selectedOutlet) {
+      setSelected(selectedOutlet);
+    } else {
+      // Fallback to localStorage saved outlet
+      const savedName = localStorage.getItem("outlet_name");
+      if (savedName) {
+        setSelected({ name: savedName });
+      }
+    }
   }, [selectedOutlet]);
 
-  // Fetch outlets on mount and whenever selectedOutlet changes
+  // Fetch outlets list on mount and whenever selectedOutlet changes
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     setLoading(true);
@@ -41,26 +45,24 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
       .catch(() => setLoading(false));
   }, [selectedOutlet]);
 
-  // Filter outlets by search term (case insensitive)
+  // Filter outlets by search term
   const filteredOutlets = outlets.filter((outlet) =>
     outlet.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle outlet selection with async API call
-const handleSelect = async (outlet) => {
-  setSelected(outlet);
-  setShow(false);
-  setSearchTerm("");
-  console.log("Selected outlet:", outlet);
-  localStorage.setItem("outlet_id", outlet.outlet_id);
-  localStorage.setItem("outlet_name", outlet.name);
+  // Handle outlet selection
+  const handleSelect = (outlet) => {
+    setSelected(outlet);
+    setShow(false);
+    setSearchTerm("");
+    localStorage.setItem("outlet_id", outlet.outlet_id);
+    localStorage.setItem("outlet_name", outlet.name);
+    if (typeof onSelect === "function") {
+      onSelect(outlet); // Notify parent immediately
+    }
+  };
 
-  const token = localStorage.getItem("access_token");
-  if (!token) return;
-
-};
-
-  // Close dropdown and clear search if click outside dropdown
+  // Close dropdown on outside click and clear search
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -147,7 +149,7 @@ const handleSelect = async (outlet) => {
       {show && (
         <div
           className="dropdown-menu show shadow overflow-hidden"
-          style={{ maxHeight: 290, maxWidth: 290, overflowY: "auto", backgroundColor: "#d1d3d4"}}
+          style={{ maxHeight: 290, maxWidth: 290, overflowY: "auto", backgroundColor: "#d1d3d4" }}
         >
           <div className="p-2">
             <input
@@ -161,48 +163,37 @@ const handleSelect = async (outlet) => {
           </div>
           <ul
             className="list-unstyled mb-0"
-            style={{  
-              maxHeight: 250,
-              overflowY: "auto",
-              paddingLeft: 0
-            }}
+            style={{ maxHeight: 250, overflowY: "auto", paddingLeft: 0 }}
           >
             {loading && <li className="dropdown-item">Loading...</li>}
-            {!loading && filteredOutlets.map((outlet, index) => (
-              <li className="outlet-list-items" key={`${outlet.outlet_id}-${index}`}>
-                <button
-                  type="button"
-                  className={`dropdown-item-outlet w-100 ${
-                    selected && selected.outlet_id === outlet.outlet_id
-                      ? "font-bold text-gray-800 bg-blue-100"
-                      : "text-dark"
-                  }`}
-
-                  onClick={() => handleSelect(outlet)}
-                  style={{ borderRadius: 8 }}
-                >
-                  <div className="d-flex align-items-center">
-                    <p className="text-capitalize m-0 p-0">{outlet.name}</p>
-                    {outlet.outlet_code && (
-                      <span className="text-xs text-secondary ms-1">
-                        ({outlet.outlet_code})
-                      </span>
-                    )}
-                  </div>
-                  {outlet.address && (
-                    <div className="text-xs text-muted">{outlet.address}</div>
-                  )}
-                  {outlet.owner_name && (
-                    <div className="text-xs text-secondary">{outlet.owner_name}</div>
-                  )}
-                </button>
-              </li>
-            ))}
+            {!loading &&
+              filteredOutlets.map((outlet, index) => (
+                <li className="outlet-list-items" key={`${outlet.outlet_id}-${index}`}>
+                  <button
+                    type="button"
+                    className={`dropdown-item-outlet w-100 ${
+                      selected && selected.outlet_id === outlet.outlet_id
+                        ? "font-bold text-gray-800 bg-blue-100"
+                        : "text-dark"
+                    }`}
+                    onClick={() => handleSelect(outlet)}
+                    style={{ borderRadius: 8 }}
+                  >
+                    <div className="d-flex align-items-center">
+                      <p className="text-capitalize m-0 p-0">{outlet.name}</p>
+                      {outlet.outlet_code && (
+                        <span className="text-xs text-secondary ms-1">({outlet.outlet_code})</span>
+                      )}
+                    </div>
+                    {outlet.address && <div className="text-xs text-muted">{outlet.address}</div>}
+                    {outlet.owner_name && <div className="text-xs text-secondary">{outlet.owner_name}</div>}
+                  </button>
+                </li>
+              ))}
             {!loading && filteredOutlets.length === 0 && (
               <li className="dropdown-item text-center text-muted">No outlets found</li>
             )}
           </ul>
-
         </div>
       )}
     </div>

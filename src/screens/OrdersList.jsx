@@ -37,11 +37,13 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
   const [cookingOrders, setCookingOrders] = useState([]);
   const [paidOrders, setPaidOrders] = useState([]);
   const [servedOrders, setServedOrders] = useState([]);
+
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [previousMenuItems, setPreviousMenuItems] = useState({});
   const [filter, setFilter] = useState("today");
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
+
   const refreshTimeoutRef = useRef(null);
   const autoProcessingRef = useRef(new Set());
 
@@ -55,6 +57,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
   const accessToken = localStorage.getItem("access_token");
   const deviceId = localStorage.getItem("device_id");
 
+  // Fetch orders API call and state update
   const fetchOrders = useCallback(async () => {
     if (!accessToken || !currentOutletId) {
       navigate("/login");
@@ -76,7 +79,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       }
 
       const result = await response.json();
-      console.log("Fetched orders:", result);
 
       setPlacedOrders(result.placed_orders || []);
       setCookingOrders(result.cooking_orders || []);
@@ -96,6 +98,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     }
   }, [accessToken, currentOutletId, filter, manualMode, navigate]);
 
+  // Automatically accept placed orders (change to cooking)
   const autoAcceptPlacedOrders = (orders) => {
     orders.forEach((o) => {
       const id = String(o.order_id);
@@ -108,6 +111,44 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     });
   };
 
+  // Update orders lists locally for immediate UI update on status change
+  const updateOrdersStateLocal = (orderId, nextStatus) => {
+    const moveOrder = (orders, setter) => {
+      const index = orders.findIndex((o) => o.order_id === orderId);
+      if (index === -1) return null;
+      const order = orders[index];
+      order.order_status = nextStatus;
+      const newOrders = [...orders];
+      newOrders.splice(index, 1);
+      setter(newOrders);
+      return order;
+    };
+
+    if (nextStatus === "served") {
+      let order = moveOrder(cookingOrders, setCookingOrders);
+      if (order) {
+        setServedOrders((prev) => [...prev, order]);
+        return;
+      }
+      order = moveOrder(placedOrders, setPlacedOrders);
+      if (order) {
+        setServedOrders((prev) => [...prev, order]);
+        return;
+      }
+    } else if (nextStatus === "cooking") {
+      const order = moveOrder(placedOrders, setPlacedOrders);
+      if (order) {
+        setCookingOrders((prev) => [...prev, order]);
+      }
+    } else if (nextStatus === "cancelled") {
+      setPlacedOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+      setCookingOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+      setPaidOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+      setServedOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+    }
+  };
+
+  // Update order status on server, then update UI immediately
   const updateOrderStatus = async (orderId, nextStatus = "served") => {
     if (!accessToken || !orderId) {
       navigate("/login");
@@ -142,6 +183,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
+      updateOrdersStateLocal(orderId, nextStatus);
     } catch (error) {
       console.error("Error updating order status:", error.message);
       fetchOrders();
@@ -173,21 +215,28 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     fetchOrders,
   }));
 
+  // Separate handler for manual refresh button
+  const handleManualRefresh = () => {
+    fetchOrders();
+  };
+
   useEffect(() => {
     if (!accessToken || !currentOutletId || !userId || !deviceId) {
       navigate("/login");
       return;
     }
     fetchOrders();
+
     if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
-    refreshTimeoutRef.current = setInterval(fetchOrders, 1000);
+    refreshTimeoutRef.current = setInterval(fetchOrders, 1000); // 10 seconds refresh
+
     return () => {
       if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
     };
   }, [fetchOrders]);
 
+  // CircularCountdown component (unchanged except for using updated updateOrderStatus)
   const CircularCountdown = React.memo(({ orderId, order }) => {
-    console.log("Rendering CircularCountdown for orderId:", orderId);
     const [timeLeft, setTimeLeft] = useState(40);
     const [isExpired, setIsExpired] = useState(false);
     const timerRef = useRef(null);
@@ -290,7 +339,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       }
     };
 
-    // Only show Reject button if kds_button_enabled is 1 for this order
     return (
       <div className="d-flex align-items-center gap-2">
         <div className="circular-countdown">
@@ -344,7 +392,6 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                 minHeight: "unset",
                 display: "inline-block",
                 width: "100%",
-                
               }}
             >
               <div className={`bg-${cssType} bg-opacity-10 py-2`}>
@@ -355,8 +402,11 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                   <p className="mb-0 fs-5 text-capitalize fw-semibold order-tables-orders-number">
                     {order.section_name
                       ? order.section_name
-                      : `${order.order_type}${order.table_number?.length ? ` - ${order.table_number.join(", ")}` : ""}`
-                    }
+                      : `${order.order_type}${
+                          order.table_number?.length
+                            ? ` - ${order.table_number.join(", ")}`
+                            : ""
+                        }`}
                   </p>
                 </div>
               </div>
@@ -367,7 +417,8 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                       prevMenuItems.length > 0 &&
                       !prevMenuItems.includes(menu.menu_name);
 
-                    const hrColor = foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
+                    const hrColor =
+                      foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
 
                     return (
                       <div
@@ -376,7 +427,9 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                         style={{ margin: "0px", padding: "0px" }}
                       >
                         <div
-                          className={`d-flex fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}
+                          className={`d-flex fw-semibold text-capitalize menu-item-text ${
+                            isNewItem ? "text-danger" : ""
+                          }`}
                           style={{ alignItems: "center" }}
                         >
                           <hr
@@ -392,7 +445,9 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                           <p className="mb-0">{menu.menu_name}</p>
                         </div>
                         <div
-                          className={`fw-semibold text-capitalize menu-item-text ${isNewItem ? "text-danger" : ""}`}
+                          className={`fw-semibold text-capitalize menu-item-text ${
+                            isNewItem ? "text-danger" : ""
+                          }`}
                         >
                           {menu.half_or_full}
                         </div>
@@ -440,6 +495,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
     },
     [manualMode, previousMenuItems, updateOrderStatus, userRole]
   );
+
   const outletName = localStorage.getItem("outlet_name");
 
   return (
@@ -448,7 +504,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         outletName={localStorage.getItem("outlet_name") || ""}
         filter={filter}
         onFilterChange={setFilter}
-        onRefresh={fetchOrders}
+        onRefresh={handleManualRefresh} // Use separated manual refresh
         manualMode={manualMode}
         onToggleManualMode={setManualMode}
       />
@@ -497,8 +553,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
             )}
           </div>
         </div>
-      )
-      }
+      )}
     </div>
   );
 });

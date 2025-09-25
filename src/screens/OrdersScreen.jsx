@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import OutletDropdown from "../components/OutletDropdown";
 import Header from "../components/Header";
 import OrdersList from "../components/OrdersList";
@@ -12,15 +12,20 @@ function OrdersScreen() {
 
   const ordersListRef = useRef(null);
 
+  // Called when outlet is selected
   const onOutletSelect = (outlet) => {
     setSelectedOutlet(outlet);
     localStorage.setItem("outlet_id", outlet.outlet_id);
     localStorage.setItem("outlet_name", outlet.name);
+    // DO NOT call fetchOrders here! See below.
+  };
 
-    if (ordersListRef.current) {
+  // This effect runs after selectedOutlet is updated & OrdersList receives new props
+  useEffect(() => {
+    if (ordersListRef.current && selectedOutlet?.outlet_id) {
       ordersListRef.current.fetchOrders();
     }
-  };
+  }, [selectedOutlet]); // <--- This guarantees newest outlet is used
 
   const onRefresh = () => {
     if (ordersListRef.current) {

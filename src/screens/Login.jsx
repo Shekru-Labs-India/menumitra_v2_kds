@@ -236,7 +236,7 @@ function Login() {
                           color: resendCooldown > 0 ? 'gray' : '#2563eb', // Gray when disabled, blue otherwise
                         }}
                       >
-                        {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
+                        {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : "Resend OTP"}
                       </button>
                       <button
                         className="text-base font-medium focus:outline-none focus:underline mb-3"
