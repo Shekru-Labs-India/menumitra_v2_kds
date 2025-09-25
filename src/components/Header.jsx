@@ -11,7 +11,6 @@ function Header({
   selectedOutlet      // <--- Now controlled from parent!
 }) {
   const [localFilter, setLocalFilter] = useState(filter || "today");
-  const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -46,7 +45,6 @@ function Header({
 
   const handleLogout = async () => {
     try {
-      setLoading(true);
       const logoutData = {
         user_id: userId,
         role: "chef",
@@ -73,8 +71,6 @@ function Header({
     } catch (error) {
       console.error("Error logging out:", error);
       window.showToast?.("error", error.message || "Failed to log out.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -103,12 +99,6 @@ function Header({
     ...toggleBtnStyle,
     background: "#fff",
     color: "#1673ff",
-  };
-
-  const dropdownActiveStyle = {
-    fontWeight: 700,
-    backgroundColor: "#e9f4ff",
-    color: "#0d6efd",
   };
 
   const changeFilter = (value) => {
