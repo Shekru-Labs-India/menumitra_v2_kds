@@ -6,6 +6,7 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
   const [selected, setSelected] = useState(selectedOutlet || null);
   const [show, setShow] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [hideDropdown, setHideDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
   // Sync local selected state with selectedOutlet prop
@@ -13,7 +14,6 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     if (selectedOutlet) {
       setSelected(selectedOutlet);
     } else {
-      // Fallback to localStorage saved outlet
       const savedName = localStorage.getItem("outlet_name");
       if (savedName) {
         setSelected({ name: savedName });
@@ -39,8 +39,16 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     })
       .then((res) => res.json())
       .then((data) => {
-        setOutlets(Array.isArray(data.outlets) ? data.outlets : []);
+        const fetchedOutlets = Array.isArray(data.outlets) ? data.outlets : [];
+        setOutlets(fetchedOutlets);
         setLoading(false);
+        if (fetchedOutlets.length === 1) {
+          const singleOutlet = fetchedOutlets[0];
+          setHideDropdown(true);
+          handleSelect(singleOutlet);
+        } else {
+          setHideDropdown(false);
+        }
       })
       .catch(() => setLoading(false));
   }, [selectedOutlet]);
@@ -58,7 +66,7 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     localStorage.setItem("outlet_id", outlet.outlet_id);
     localStorage.setItem("outlet_name", outlet.name);
     if (typeof onSelect === "function") {
-      onSelect(outlet); // Notify parent immediately
+      onSelect(outlet);
     }
   };
 
@@ -75,6 +83,35 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  if (hideDropdown && selected) {
+    return (
+      <div
+        className="inline-block min-w-[220px]"
+        style={{ position: "relative", borderRadius: "3px", width: "180px" }}
+      >
+        <div
+          className="selected-outlet-label"
+          style={{
+            background: "#fff",
+            color: "#000",
+            fontSize: "1.12rem",
+            fontWeight: "500",
+            padding: "0.32rem 1rem",
+            border: "1.5px solid #d0d5dd",
+            borderRadius: "15px",
+            minHeight: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "left",
+            cursor: "default",
+          }}
+        >
+          {selected.name}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -186,7 +223,9 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
                       )}
                     </div>
                     {outlet.address && <div className="text-xs text-muted">{outlet.address}</div>}
-                    {outlet.owner_name && <div className="text-xs text-secondary">{outlet.owner_name}</div>}
+                    {outlet.owner_name && (
+                      <div className="text-xs text-secondary">{outlet.owner_name}</div>
+                    )}
                   </button>
                 </li>
               ))}

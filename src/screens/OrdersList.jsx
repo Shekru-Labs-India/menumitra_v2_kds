@@ -24,6 +24,25 @@ const styles = `
   .font_size_14 { font-size: 14px; }
   .font_size_12 { font-size: 12px; }
   .menu-item-text { font-size: 18px !important; }
+  .menu-items-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .menu-items-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .menu-items-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+  }
+  .menu-items-scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+  }
+  .menu-items-scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
 `;
 const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
@@ -411,65 +430,68 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                 </div>
               </div>
               <div className="card-body p-1">
-                {Array.isArray(order.menu_details) &&
-                  order.menu_details.map((menu, index) => {
-                    const isNewItem =
-                      prevMenuItems.length > 0 &&
-                      !prevMenuItems.includes(menu.menu_name);
+                {Array.isArray(order.menu_details) && (
+                  <div className={order.menu_details.length > 6 ? "menu-items-scroll" : ""}>
+                    {order.menu_details.map((menu, index) => {
+                      const isNewItem =
+                        prevMenuItems.length > 0 &&
+                        !prevMenuItems.includes(menu.menu_name);
 
-                    const hrColor =
-                      foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
+                      const hrColor =
+                        foodTypeColors[menu.food_type.toLowerCase()] || "#f21717";
 
-                    return (
-                      <div
-                        className={`d-flex flex-wrap justify-content-between align-items-center border-${cssType} border-3 ps-2 mb-2`}
-                        key={index}
-                        style={{ margin: "0px", padding: "0px" }}
-                      >
+                      return (
                         <div
-                          className={`d-flex fw-semibold text-capitalize menu-item-text ${
-                            isNewItem ? "text-danger" : ""
-                          }`}
-                          style={{ alignItems: "center" }}
+                          className={`d-flex flex-wrap justify-content-between align-items-center border-${cssType} border-3 ps-2 mb-2`}
+                          key={index}
+                          style={{ margin: "0px", padding: "0px" }}
                         >
-                          <hr
-                            style={{
-                              height: "20px",
-                              backgroundColor: hrColor,
-                              border: "none",
-                              width: "3px",
-                              margin: "0 5px 0 0",
-                              padding: "0px",
-                            }}
-                          />
-                          <p className="mb-0">{menu.menu_name}</p>
-                        </div>
-                        <div
-                          className={`fw-semibold text-capitalize menu-item-text ${
-                            isNewItem ? "text-danger" : ""
-                          }`}
-                        >
-                          {menu.half_or_full}
-                        </div>
-                        <div
-                          className="d-flex align-items-center text-end gap-2"
-                          style={{ paddingRight: "10px" }}
-                        >
-                          <span className="fw-semibold menu-item-text">
-                            × {menu.quantity}
-                          </span>
-                        </div>
-                        {menu.comment && (
                           <div
-                            className="w-100 text-start text-muted"
-                            style={{ fontSize: "0.75rem" }}
+                            className={`d-flex fw-semibold text-capitalize menu-item-text ${
+                              isNewItem ? "text-danger" : ""
+                            }`}
+                            style={{ alignItems: "center" }}
                           >
-                            <span>{menu.comment}</span>
+                            <hr
+                              style={{
+                                height: "20px",
+                                backgroundColor: hrColor,
+                                border: "none",
+                                width: "3px",
+                                margin: "0 5px 0 0",
+                                padding: "0px",
+                              }}
+                            />
+                            <p className="mb-0">{menu.menu_name}</p>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          <div
+                            className={`fw-semibold text-capitalize menu-item-text ${
+                              isNewItem ? "text-danger" : ""
+                            }`}
+                          >
+                            {menu.half_or_full}
+                          </div>
+                          <div
+                            className="d-flex align-items-center text-end gap-2"
+                            style={{ paddingRight: "10px" }}
+                          >
+                            <span className="fw-semibold menu-item-text">
+                              × {menu.quantity}
+                            </span>
+                          </div>
+                          {menu.comment && (
+                            <div
+                              className="w-100 text-start text-muted"
+                              style={{ fontSize: "0.75rem" }}
+                            >
+                              <span>{menu.comment}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Only show Complete Order button if kds_button_enabled = 1 */}
                 {manualMode && type === "warning" && !isSuperOwner && order.kds_button_enabled === 1 && (
@@ -538,6 +560,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
                   <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-warning py-2 d-flex align-items-center justify-content-center rounded-4">
                     Cooking ({cookingOrders.length})
                   </h4>
+                  
                   <div className="row g-3 justify-content-center">{renderOrders(cookingOrders, "warning")}</div>
                 </div>
                 <div className="col-4 child-container">

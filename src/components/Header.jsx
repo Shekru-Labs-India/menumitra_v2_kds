@@ -230,7 +230,7 @@ function Header({
                   <div
                     className="modal-content"
                     style={{
-                      border: "2px solid #dc3545",
+                      border: "1px solidrgb(65, 65, 65)",
                       borderRadius: "8px",
                       boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                     }}
@@ -250,14 +250,26 @@ function Header({
                     <div className="modal-footer justify-content-between logout-box-container pt-3">
                       <button
                         type="button"
-                        className="btn btn-secondary"
+                        className="btn btn-outline-secondary"
                         onClick={() => handleLogoutConfirm(false)}
+                        style={{
+                          background: "transparent",
+                          borderRadius: 15,
+                          padding: "6px 12px",
+                          height: "40px",
+                          width: "100px",
+                          borderWidth: 1,
+                          borderColor: "#6c757d",
+                          color: "#6c757d",
+                          boxShadow: "none",
+                        }}
                       >
-                        <i className="fa-solid fa-xmark me-1"></i> Cancel
+                        Cancel
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger "
+                        style={{borderRadius: 15, padding: "6px 12px", height: "40px", borderWidth: 1, borderColor: "#dc3545", color: "#fff", boxShadow: "none"}}
                         onClick={() => handleLogoutConfirm(true)}
                       >
                         <i className="fa-solid fa-right-from-bracket me-2"></i> Exit Me
