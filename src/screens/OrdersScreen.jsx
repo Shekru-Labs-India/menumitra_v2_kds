@@ -9,6 +9,7 @@ function OrdersScreen() {
     const name = localStorage.getItem("outlet_name");
     return id && name ? { outlet_id: Number(id), name } : null;
   });
+  const [subscriptionData, setSubscriptionData] = useState(null);
 
   const ordersListRef = useRef(null);
 
@@ -33,11 +34,22 @@ function OrdersScreen() {
     }
   };
 
+  const handleSubscriptionDataChange = (data) => {
+    // Only set subscription data if outlet is selected
+    if (selectedOutlet && selectedOutlet.outlet_id) {
+      setSubscriptionData(data);
+    } else {
+      setSubscriptionData(null);
+    }
+  };
+
   return (
     <div className="min-vh-100 d-flex flex-column">
       <Header
         outletName={selectedOutlet?.name || ""}
         onRefresh={onRefresh}
+        selectedOutlet={selectedOutlet}
+        subscriptionData={subscriptionData}
       />
       <OutletDropdown
         onSelect={onOutletSelect}
@@ -46,6 +58,7 @@ function OrdersScreen() {
       <OrdersList
         ref={ordersListRef}
         outletId={selectedOutlet?.outlet_id}
+        onSubscriptionDataChange={handleSubscriptionDataChange}
       />
     </div>
   );

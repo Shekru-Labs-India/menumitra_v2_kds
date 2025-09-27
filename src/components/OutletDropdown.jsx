@@ -21,9 +21,11 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     }
   }, [selectedOutlet]);
 
-  // Fetch outlets list on mount and whenever selectedOutlet changes
+  // Fetch outlets list only once on mount
   useEffect(() => {
     const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
     setLoading(true);
     fetch("https://men4u.xyz/v2/common/get_outlet_list", {
       method: "POST",
@@ -51,7 +53,7 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
         }
       })
       .catch(() => setLoading(false));
-  }, [selectedOutlet]);
+  }, []); // Empty dependency array - only run once on mount
 
   // Filter outlets by search term
   const filteredOutlets = outlets.filter((outlet) =>

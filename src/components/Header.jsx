@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import OutletDropdown from "./OutletDropdown";
+import SubscriptionRemainDay from "./SubscriptionRemainDay";
 
 function Header({
   filter,
   onFilterChange,
   onRefresh,
   onOutletSelect,
-  selectedOutlet      // <--- Now controlled from parent!
+  selectedOutlet,      // <--- Now controlled from parent!
+  subscriptionData     // <--- New prop for subscription data
 }) {
   const [localFilter, setLocalFilter] = useState(filter || "today");
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -281,6 +283,14 @@ function Header({
             </>
           )}
         </header>
+      )}
+      {/* Subscription Component - Only show when outlet is selected and subscription data is available */}
+      {!isFullscreen && selectedOutlet && selectedOutlet.outlet_id && subscriptionData && selectedOutlet.name && (
+        <SubscriptionRemainDay 
+          selectedOutlet={selectedOutlet} 
+          subscriptionData={subscriptionData}
+          dateRange={filter}
+        />
       )}
     </>
   );

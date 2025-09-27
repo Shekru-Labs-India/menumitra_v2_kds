@@ -48,7 +48,7 @@ const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
 
-const OrdersList = forwardRef(({ outletId }, ref) => {
+const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
   const navigate = useNavigate();
   const userRole = localStorage.getItem("user_role") || "";
 
@@ -56,6 +56,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
   const [cookingOrders, setCookingOrders] = useState([]);
   const [paidOrders, setPaidOrders] = useState([]);
   const [servedOrders, setServedOrders] = useState([]);
+  const [subscriptionData, setSubscriptionData] = useState(null);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -103,9 +104,15 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
       setCookingOrders(result.cooking_orders || []);
       setPaidOrders(result.paid_orders || []);
       setServedOrders(result.served_orders || []);
+      setSubscriptionData(result.subscription_details || null);
       setLastRefreshTime(new Date().toLocaleTimeString());
       setError(null);
       setInitialLoading(false);
+
+      // Pass subscription data to parent
+      if (onSubscriptionDataChange) {
+        onSubscriptionDataChange(result.subscription_details || null);
+      }
 
       if (!manualMode && Array.isArray(result.placed_orders) && result.placed_orders.length) {
         autoAcceptPlacedOrders(result.placed_orders);
@@ -232,6 +239,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
 
   useImperativeHandle(ref, () => ({
     fetchOrders,
+    subscriptionData,
   }));
 
   // Separate handler for manual refresh button
@@ -529,6 +537,8 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
         onRefresh={handleManualRefresh} // Use separated manual refresh
         manualMode={manualMode}
         onToggleManualMode={setManualMode}
+        selectedOutlet={{ outlet_id: currentOutletId, name: outletName }}
+        subscriptionData={subscriptionData}
       />
       {!outletName ? (
         <div className="d-flex flex-column min-vh-100 justify-content-between">
@@ -550,6 +560,7 @@ const OrdersList = forwardRef(({ outletId }, ref) => {
 
             {!initialLoading && !error && (
               <div className="row g-3  main-kds-view-container">
+              
                 <div className="col-4 child-container">
                   <h4 className="display-5 text-white text-center fw-bold mb-3 mb-md-4 bg-secondary py-2 d-flex align-items-center justify-content-center rounded-4">
                     Placed ({placedOrders.length})
