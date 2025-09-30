@@ -100,9 +100,11 @@ const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: pr
   };
 
   const getProgressColor = (daysRemaining) => {
-    if (daysRemaining > 15) return '#10B981'; // Green
-    if (daysRemaining > 5) return '#F59E0B'; // Yellow
-    return '#EF4444'; // Red
+    if (daysRemaining > 30) return '#10B981'; // green
+    if (daysRemaining < 5) return '#ef4444'; // red
+    if (daysRemaining < 15) return '#f59e0b'; // orange
+    if (daysRemaining < 30) return '#eab308'; // yellow
+    return '#10B981';
   };
 
   // Hide timeline until outlet is selected
@@ -136,9 +138,18 @@ const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: pr
     );
   }
 
-  const daysRemaining = calculateDaysRemaining(subscriptionData.end_date);
   const totalDays = calculateTotalDays(subscriptionData.start_date, subscriptionData.end_date);
-  const daysCompleted = Math.max(0, totalDays - daysRemaining);
+  let daysCompleted;
+  let daysRemaining;
+
+  if (typeof subscriptionData.status === 'number' && !Number.isNaN(subscriptionData.status)) {
+    daysCompleted = Math.max(0, Math.min(totalDays, subscriptionData.status));
+    daysRemaining = Math.max(0, totalDays - daysCompleted);
+  } else {
+    daysRemaining = calculateDaysRemaining(subscriptionData.end_date);
+    daysCompleted = Math.max(0, totalDays - daysRemaining);
+  }
+
   const progressPercentage = (daysCompleted / totalDays) * 100;
   const remainingPercentage = (daysRemaining / totalDays) * 100;
 
