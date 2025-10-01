@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: propSubscriptionData }) => {
@@ -18,70 +19,55 @@ const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: pr
     }
   }
 
-  const fetchSubscriptionData = async (outletId) => {
-    if (!outletId || !token) return;
-    
-    setLoading(true);
-    setError('');
+  const fetchSubscriptionData = async ({ queryKey }) => {
+    const [_key, outletId, currentDateRange] = queryKey;
+    if (!outletId || !token) return null;
     try {
       const requestPayload = {
         outlet_id: outletId,
-        date_filter: dateRange || "today",
+        date_filter: currentDateRange || 'today',
         owner_id: 1,
-        app_source: "admin",
+        app_source: 'admin',
       };
-      
       const response = await axios.post(
-        "https://men4u.xyz/v2/common/cds_kds_order_listview",
+        'https://men4u.xyz/v2/common/cds_kds_order_listview',
         requestPayload,
         {
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      
       const data = response.data;
-      if (data && data.subscription_details) {
-        setSubscriptionData(data.subscription_details);
-      } else {
-        // Mock data for testing when subscription_details is not available
-        const mockSubscriptionData = {
-          subscription_id: 22,
-          name: "POS App Basic",
-          price: 1000.0,
-          tenure: "3 months",
-          start_date: "2025-09-25T13:49:35",
-          end_date: "2025-12-25T13:49:35",
-          status: true,
-          subscription_price: 1000.0
-        };
-        setSubscriptionData(mockSubscriptionData);
-      }
+      return data && data.subscription_details ? data.subscription_details : null;
     } catch (err) {
-      console.error("Error fetching subscription data:", err);
-      setError("Failed to fetch subscription data");
-      setSubscriptionData(null);
-      
-      // Handle API errors
       if (err.response?.status === 401) {
         localStorage.clear();
         navigate('/login');
-        return;
+        return null;
       }
-    } finally {
-      setLoading(false);
+      throw err;
     }
   };
+
+  const { data: subscriptionFromQuery, isLoading, error: queryError } = useQuery({
+    queryKey: ['subscription', selectedOutlet?.outlet_id, dateRange],
+    enabled: !!selectedOutlet?.outlet_id && !propSubscriptionData,
+    queryFn: fetchSubscriptionData,
+  });
 
   useEffect(() => {
     if (propSubscriptionData) {
       setSubscriptionData(propSubscriptionData);
-    } else if (selectedOutlet) {
-      fetchSubscriptionData(selectedOutlet.outlet_id);
+      setError('');
+      setLoading(false);
+    } else {
+      setSubscriptionData(subscriptionFromQuery || null);
+      setError(queryError ? 'Failed to fetch subscription data' : '');
+      setLoading(!!isLoading);
     }
-  }, [selectedOutlet, dateRange, propSubscriptionData]);
+  }, [propSubscriptionData, subscriptionFromQuery, isLoading, queryError]);
 
   const calculateDaysRemaining = (endDate) => {
     const today = new Date();

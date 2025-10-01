@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
+import { useQuery } from "@tanstack/react-query";
 
 const styles = `
   .circular-countdown {
@@ -64,7 +65,6 @@ const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
   const [filter, setFilter] = useState("today");
   const [lastRefreshTime, setLastRefreshTime] = useState(null);
 
-  const refreshTimeoutRef = useRef(null);
   const autoProcessingRef = useRef(new Set());
 
   const [manualMode, setManualMode] = useState(() => {
@@ -72,73 +72,51 @@ const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
     return saved ? JSON.parse(saved) : true;
   });
 
-  const currentOutletId = outletId || localStorage.getItem("outlet_id");
+  // Use only localStorage as the single source of truth to avoid mismatches
+  const currentOutletId = localStorage.getItem("outlet_id") || null;
+  const numericOutletId = typeof currentOutletId === "string" ? parseInt(currentOutletId, 10) : Number(currentOutletId);
+  const isValidOutletId = Number.isFinite(numericOutletId) && numericOutletId > 0;
   const userId = localStorage.getItem("user_id");
   const accessToken = localStorage.getItem("access_token");
   const deviceId = localStorage.getItem("device_id");
 
-  // Fetch orders API call and state update
-  const fetchOrders = useCallback(async () => {
-    if (!accessToken || !currentOutletId) {
-      navigate("/login");
-      return;
-    }
-    try {
+  // TanStack Query: fetch orders every 30s, cached 30s
+  const {
+    data: ordersResponse,
+    refetch,
+    isFetching,
+    isLoading: queryLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["orders", isValidOutletId ? numericOutletId : null, filter],
+    enabled: !!accessToken && isValidOutletId,
+    refetchInterval: false,
+    queryFn: async () => {
       const response = await fetch("https://men4u.xyz/v2/common/cds_kds_order_listview", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ outlet_id: Number(currentOutletId), date_filter: filter }),
+        body: JSON.stringify({ outlet_id: numericOutletId, date_filter: filter }),
       });
-
       if (response.status === 401) {
         navigate("/login");
-        return;
+        return {
+          placed_orders: [],
+          cooking_orders: [],
+          paid_orders: [],
+          served_orders: [],
+          subscription_details: null,
+        };
       }
-
       const result = await response.json();
-
-      setPlacedOrders(result.placed_orders || []);
-      setCookingOrders(result.cooking_orders || []);
-      setPaidOrders(result.paid_orders || []);
-      setServedOrders(result.served_orders || []);
-      setSubscriptionData(result.subscription_details || null);
-      setLastRefreshTime(new Date().toLocaleTimeString());
-      setError(null);
-      setInitialLoading(false);
-
-      // Pass subscription data to parent
-      if (onSubscriptionDataChange) {
-        onSubscriptionDataChange(result.subscription_details || null);
-      }
-
-      if (!manualMode && Array.isArray(result.placed_orders) && result.placed_orders.length) {
-        autoAcceptPlacedOrders(result.placed_orders);
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Error fetching orders");
-      setInitialLoading(false);
-    }
-  }, [accessToken, currentOutletId, filter, manualMode, navigate]);
-
-  // Automatically accept placed orders (change to cooking)
-  const autoAcceptPlacedOrders = (orders) => {
-    orders.forEach((o) => {
-      const id = String(o.order_id);
-      if (!autoProcessingRef.current.has(id)) {
-        autoProcessingRef.current.add(id);
-        updateOrderStatus(id, "cooking").finally(() => {
-          autoProcessingRef.current.delete(id);
-        });
-      }
-    });
-  };
+      return result || {};
+    },
+  });
 
   // Update orders lists locally for immediate UI update on status change
-  const updateOrdersStateLocal = (orderId, nextStatus) => {
+  const updateOrdersStateLocal = useCallback((orderId, nextStatus) => {
     const moveOrder = (orders, setter) => {
       const index = orders.findIndex((o) => o.order_id === orderId);
       if (index === -1) return null;
@@ -172,10 +150,10 @@ const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
       setPaidOrders((prev) => prev.filter((o) => o.order_id !== orderId));
       setServedOrders((prev) => prev.filter((o) => o.order_id !== orderId));
     }
-  };
+  }, [cookingOrders, placedOrders, setCookingOrders, setPlacedOrders, setServedOrders, setPaidOrders]);
 
   // Update order status on server, then update UI immediately
-  const updateOrderStatus = async (orderId, nextStatus = "served") => {
+  const updateOrderStatus = useCallback(async (orderId, nextStatus = "served") => {
     if (!accessToken || !orderId) {
       navigate("/login");
       return;
@@ -212,9 +190,66 @@ const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
       updateOrdersStateLocal(orderId, nextStatus);
     } catch (error) {
       console.error("Error updating order status:", error.message);
-      fetchOrders();
+      refetch();
     }
-  };
+  }, [accessToken, currentOutletId, userId, deviceId, navigate, refetch, updateOrdersStateLocal]);
+
+  // Automatically accept placed orders (change to cooking)
+  const autoAcceptPlacedOrders = useCallback((orders) => {
+    orders.forEach((o) => {
+      const id = String(o.order_id);
+      if (!autoProcessingRef.current.has(id)) {
+        autoProcessingRef.current.add(id);
+        updateOrderStatus(id, "cooking").finally(() => {
+          autoProcessingRef.current.delete(id);
+        });
+      }
+    });
+  }, [updateOrderStatus]);
+
+  // Mirror query data into local UI state
+  useEffect(() => {
+    if (queryLoading) {
+      setInitialLoading(true);
+      return;
+    }
+    if (queryError) {
+      setError("Error fetching orders");
+      setInitialLoading(false);
+      return;
+    }
+    if (ordersResponse) {
+      const result = ordersResponse;
+      setPlacedOrders(result.placed_orders || []);
+      setCookingOrders(result.cooking_orders || []);
+      setPaidOrders(result.paid_orders || []);
+      setServedOrders(result.served_orders || []);
+      setSubscriptionData(result.subscription_details || null);
+      setLastRefreshTime(new Date().toLocaleTimeString());
+      setError(null);
+      setInitialLoading(false);
+
+      if (onSubscriptionDataChange) {
+        onSubscriptionDataChange(result.subscription_details || null);
+      }
+
+      if (!manualMode && Array.isArray(result.placed_orders) && result.placed_orders.length) {
+        autoAcceptPlacedOrders(result.placed_orders);
+      }
+    }
+  }, [ordersResponse, queryLoading, queryError, manualMode, onSubscriptionDataChange, autoAcceptPlacedOrders]);
+
+  // Add periodic refresh for faster updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isFetching && !queryLoading) {
+        console.log('Periodic refresh triggered...');
+        refetch();
+      }
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isFetching, queryLoading, refetch]);
 
   const refreshToken = async () => {
     const refreshToken = localStorage.getItem("refresh_token");
@@ -238,29 +273,22 @@ const OrdersList = forwardRef(({ outletId, onSubscriptionDataChange }, ref) => {
   };
 
   useImperativeHandle(ref, () => ({
-    fetchOrders,
+    fetchOrders: refetch,
     subscriptionData,
   }));
 
   // Separate handler for manual refresh button
   const handleManualRefresh = () => {
-    fetchOrders();
+    refetch();
   };
 
   useEffect(() => {
-    if (!accessToken || !currentOutletId || !userId || !deviceId) {
+    // Only redirect if authentication essentials are missing; allow staying without outlet
+    if (!accessToken || !userId || !deviceId) {
       navigate("/login");
       return;
     }
-    fetchOrders();
-
-    if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
-    refreshTimeoutRef.current = setInterval(fetchOrders, 1000); // 10 seconds refresh
-
-    return () => {
-      if (refreshTimeoutRef.current) clearInterval(refreshTimeoutRef.current);
-    };
-  }, [fetchOrders]);
+  }, [accessToken, userId, deviceId, navigate]);
 
   // CircularCountdown component (unchanged except for using updated updateOrderStatus)
   const CircularCountdown = React.memo(({ orderId, order }) => {

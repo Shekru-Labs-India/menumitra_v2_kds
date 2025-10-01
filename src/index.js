@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import 'typeface-lato';
 import App from './App';
+import { CacheProvider } from './components/cache';
 import './assets/css/demo.css'
 import './assets/css/core.css'
 import 'remixicon/fonts/remixicon.css';
@@ -15,7 +16,9 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <CacheProvider>
+      <App />
+    </CacheProvider>
   </React.StrictMode>
 );
 

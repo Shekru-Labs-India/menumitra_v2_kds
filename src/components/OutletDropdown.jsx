@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "./cache";
 
 const OutletDropdown = ({ onSelect, selectedOutlet }) => {
   const [outlets, setOutlets] = useState([]);
@@ -21,39 +23,42 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     }
   }, [selectedOutlet]);
 
-  // Fetch outlets list only once on mount
+  // Fetch outlets list via TanStack Query
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("user_id") || 0 : 0;
+
+  const { data: outletsData, isLoading } = useQuery({
+    queryKey: ["outlets", userId],
+    enabled: !!token,
+    queryFn: async () => {
+      const res = await fetch("https://men4u.xyz/v2/common/get_outlet_list", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ owner_id: userId, app_source: "admin", outlet_id: 0 }),
+      });
+      const json = await res.json();
+      return Array.isArray(json.outlets) ? json.outlets : [];
+    },
+  });
+
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    
-    setLoading(true);
-    fetch("https://men4u.xyz/v2/common/get_outlet_list", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        owner_id: localStorage.getItem("user_id") || 0,
-        app_source: "admin",
-        outlet_id: 0,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const fetchedOutlets = Array.isArray(data.outlets) ? data.outlets : [];
-        setOutlets(fetchedOutlets);
-        setLoading(false);
-        if (fetchedOutlets.length === 1) {
-          const singleOutlet = fetchedOutlets[0];
-          setHideDropdown(true);
-          handleSelect(singleOutlet);
-        } else {
-          setHideDropdown(false);
-        }
-      })
-      .catch(() => setLoading(false));
-  }, []); // Empty dependency array - only run once on mount
+    setLoading(isLoading);
+    if (Array.isArray(outletsData)) {
+      setOutlets(outletsData);
+      console.log("outletsData", outletsData);
+      if (outletsData.length === 1) {
+        const singleOutlet = outletsData[0];
+        setHideDropdown(true);
+        handleSelect(singleOutlet);
+
+      } else {
+        setHideDropdown(false);
+      }
+    }
+  }, [isLoading, outletsData]);
 
   // Filter outlets by search term
   const filteredOutlets = outlets.filter((outlet) =>
@@ -62,6 +67,8 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
 
   // Handle outlet selection
   const handleSelect = (outlet) => {
+    console.log("handleSelect", outlet);
+    localStorage.setItem("outlet_id", outlet.outlet_id);
     setSelected(outlet);
     setShow(false);
     setSearchTerm("");
@@ -69,6 +76,13 @@ const OutletDropdown = ({ onSelect, selectedOutlet }) => {
     localStorage.setItem("outlet_name", outlet.name);
     if (typeof onSelect === "function") {
       onSelect(outlet);
+    }
+    // Immediately refresh orders queries for the selected outlet
+    try {
+      queryClient.invalidateQueries({ queryKey: ["orders"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["orders", outlet.outlet_id], exact: false });
+    } catch (e) {
+      // no-op
     }
   };
 

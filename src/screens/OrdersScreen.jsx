@@ -21,12 +21,7 @@ function OrdersScreen() {
     // DO NOT call fetchOrders here! See below.
   };
 
-  // This effect runs after selectedOutlet is updated & OrdersList receives new props
-  useEffect(() => {
-    if (ordersListRef.current && selectedOutlet?.outlet_id) {
-      ordersListRef.current.fetchOrders();
-    }
-  }, [selectedOutlet]); // <--- This guarantees newest outlet is used
+  // Removed auto-refetch on selection to avoid double API calls. OrdersList reacts via localStorage.
 
   const onRefresh = () => {
     if (ordersListRef.current) {
