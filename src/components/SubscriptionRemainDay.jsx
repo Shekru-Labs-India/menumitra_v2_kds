@@ -174,7 +174,7 @@ const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: pr
                  left: 0,
                  height: '100%',
                  width: '100%',
-                 background: `linear-gradient(to right, #E0E0E0 ${progressPercentage}%, ${getProgressColor(daysRemaining)} ${progressPercentage}%)`,
+                 background: `linear-gradient(to right, ${getProgressColor(daysRemaining)} ${100 - progressPercentage}%, #E0E0E0 ${100 - progressPercentage}%)`,
                  borderRadius: '8px',
                  transition: 'all 0.3s',
                  zIndex: 1,
