@@ -140,15 +140,17 @@ const SubscriptionRemainDay = ({ selectedOutlet, dateRange, subscriptionData: pr
   const remainingPercentage = (daysRemaining / totalDays) * 100;
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '10px' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '10px', }}>
       <div style={{
         background: '#fff',
         borderRadius: '8px',
-        boxShadow: '0 1px 4px rgba(80,89,111,0.06)',
+        boxShadow: '2px 1px 4px rgba(80,89,111,0.06)',
         border: '1px solid #ededed',
-        width: '100%',
-        maxWidth: '300px',
+        width: '50%',
+        padddingRight: '10px',
+        padddingLeft: '10px',
         margin: '0 auto',
+
       }}>
         <div style={{ padding: '8px 12px 6px 12px' }}>
           <div style={{
